@@ -126,8 +126,3 @@ clean.db: stop.db
 clean: stop clean.db
 	@echo Cleaning build and deps
 	@rm -rf _build deps
-
-.PHONY: purge
-purge: clean
-	@echo Uninstalling pre-commit checks:
-	@pre-commit uninstall
