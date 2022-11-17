@@ -6,7 +6,6 @@ config :papa_visits, PapaVisits.Repo,
   pool_size: 10
 
 config :papa_visits, PapaVisitsWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "P+NXxtB/BYNgcmWctwh2JW5kLmUP7oUutMomJBYzuCl459sADZR6Z5tCR3yNeRv1",
   server: false
 

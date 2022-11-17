@@ -7,11 +7,11 @@ secret_key_base =
     You can generate one by calling: mix phx.gen.secret
     """
 
-host = System.fetch_env!("HOST")
 port = String.to_integer(System.get_env("PORT") || "4000")
 
 config :papa_visits, PapaVisitsWeb.Endpoint,
-  url: [host: host, port: port, scheme: "http"],
+  http: [ip: {127, 0, 0, 1}, port: port],
+  url: [host: "localhost", port: port, scheme: "http"],
   secret_key_base: secret_key_base
 
 config :papa_visits, PapaVisits.Repo,
