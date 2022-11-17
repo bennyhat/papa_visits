@@ -13,7 +13,7 @@ bootstrap:
 	@echo Installing pre-commit checks:
 	@pre-commit install
 
-	@echo Install hex and rebar:
+	@echo Installing hex and rebar:
 	@mix local.hex --force
 	@mix local.rebar --force
 
