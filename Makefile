@@ -55,6 +55,7 @@ start.db:
 .PHONY: start
 start:
 	@${MAKE} start.db
+	@${MAKE} migrations.prod
 
 	@test -f ${RELEASE} \
 		|| ${MAKE} release
@@ -63,6 +64,19 @@ start:
 	@${RELEASE} pid &>/dev/null \
 		&& echo - Already started \
 		|| ${RELEASE} daemon
+
+.PHONY: migrations.prod
+migrations.prod:
+	@echo Migrating prod database
+	@MIX_ENV=prod mix do ecto.create ecto.migrate
+
+.PHONY: migrations
+migrations:
+	@echo Migrating dev database
+	@MIX_ENV=dev mix do ecto.create ecto.migrate
+	@echo Migrating test database
+	@MIX_ENV=test mix do ecto.create ecto.migrate
+	@${MAKE} migrations.prod
 
 .PHONY: stop.db
 stop.db:
