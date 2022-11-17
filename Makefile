@@ -47,9 +47,17 @@ compile.%:
 .PHONY: compile
 compile: compile.dev compile.test compile.prod
 
+define do-release
+@echo Releasing application
+@MIX_ENV=prod mix do phx.digest + release
+endef
+
+.PHONY: release
+release:
+	@$(do-release)
+
 $(RELEASE):
-	@echo Releasing application
-	@MIX_ENV=prod mix release
+	@$(do-release)
 
 $(PGDATA)/PG_VERSION:
 	@echo Initializing psql server data
@@ -62,15 +70,27 @@ start.db: $(PGDATA)/PG_VERSION
 		&& echo - Already started \
 		|| pg_ctl start
 
+define do-start
+@${RELEASE} pid &>/dev/null \
+	&& echo - Already started \
+	|| ${RELEASE} ${1}
+endef
+
 .PHONY: start.app
 start.app: $(RELEASE)
 	@echo Starting application
-	@${RELEASE} pid &>/dev/null \
-		&& echo - Already started \
-		|| ${RELEASE} daemon
+	$(call do-start,daemon)
+
+.PHONY: start.app.interactive
+start.app.interactive: $(RELEASE)
+	@echo Starting application
+	$(call do-start,start_iex)
 
 .PHONY: start
 start: start.db migrations.prod start.app
+
+.PHONY: start.interactive
+start.interactive: start.db migrations.prod start.app.interactive
 
 .PHONY: run.app
 run.app:
@@ -79,11 +99,11 @@ run.app:
 
 .PHONY: run.db.dev
 run.db.dev: start.db migrations.dev
-	psql ${PGDATABASE}_dev
+	psql ${PGDATABASE_DEV}
 
 .PHONY: run.db.test
 run.db.test: start.db migrations.test
-	psql ${PGDATABASE}_test
+	psql ${PGDATABASE_TEST}
 
 .PHONY: run.db.prod
 run.db.prod: start.db migrations.prod

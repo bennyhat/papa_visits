@@ -20,11 +20,18 @@ config :papa_visits, PapaVisits.Repo,
   password: System.fetch_env!("PGPASSWORD"),
   hostname: System.fetch_env!("PGHOST")
 
-if config_env() == :prod do
-  maybe_ipv6 = if System.get_env("ECTO_IPV6"), do: [:inet6], else: []
+case config_env() do
+  :prod ->
+    maybe_ipv6 = if System.get_env("ECTO_IPV6"), do: [:inet6], else: []
 
-  config :papa_visits, PapaVisits.Repo,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    socket_options: maybe_ipv6,
-    database: System.fetch_env!("PGDATABASE")
+    config :papa_visits, PapaVisits.Repo,
+      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+      socket_options: maybe_ipv6,
+      database: System.fetch_env!("PGDATABASE")
+
+  :dev ->
+    config :papa_visits, PapaVisits.Repo, database: System.fetch_env!("PGDATABASE_DEV")
+
+  :test ->
+    config :papa_visits, PapaVisits.Repo, database: System.fetch_env!("PGDATABASE_TEST")
 end
