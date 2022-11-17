@@ -51,15 +51,12 @@ $(RELEASE):
 	@echo Releasing application
 	@MIX_ENV=prod mix release
 
-.PHONY: start.db
-start.db:
-	@mkdir -p ${PGDATA}
-
+$(PGDATA)/PG_VERSION:
 	@echo Initializing psql server data
-	@ test -f ${PGDATA}/PG_VERSION \
-		&& echo - Already initialized \
-		|| initdb --username="${PGUSER}" --pwfile=<(echo "${PGPASSWORD}")
+	@initdb --username="${PGUSER}" --pwfile=<(echo "${PGPASSWORD}")
 
+.PHONY: start.db
+start.db: $(PGDATA)/PG_VERSION
 	@echo Starting psql server
 	@pg_ctl status &>/dev/null \
 		&& echo - Already started \
@@ -79,6 +76,18 @@ start: start.db migrations.prod start.app
 run.app:
 	@echo Running application
 	@MIX_ENV=dev mix phx.server
+
+.PHONY: run.db.dev
+run.db.dev: start.db migrations.dev
+	psql ${PGDATABASE}_dev
+
+.PHONY: run.db.test
+run.db.test: start.db migrations.test
+	psql ${PGDATABASE}_test
+
+.PHONY: run.db.prod
+run.db.prod: start.db migrations.prod
+	psql
 
 .PHONY: run.app.interactive
 run.app.interactive:
