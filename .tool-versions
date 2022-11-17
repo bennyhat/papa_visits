@@ -1,0 +1,6 @@
+elixir 1.14.2
+erlang 25.1
+postgres 14.6
+make 4.4
+pre-commit 2.20.0
+direnv 2.32.1
