@@ -136,7 +136,7 @@ run.interactive: start.db migrations.dev run.app.interactive
 
 .PHONY: migrations.%
 migrations.%: MIX_ENV=$*
-migrations.%:
+migrations.%: deps
 	@echo Migrating ${MIX_ENV} database
 	@MIX_ENV=${MIX_ENV} mix do ecto.create + ecto.migrate
 
