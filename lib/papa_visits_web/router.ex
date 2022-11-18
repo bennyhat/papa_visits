@@ -12,10 +12,16 @@ defmodule PapaVisitsWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+
+    plug PapaVisitsWeb.ApiAuthPlug,
+      otp_app: :papa_visits,
+      token_namespace: "papa_visits_api"
   end
 
-  scope "/api", PapaVisitsWeb do
+  scope "/api", PapaVisitsWeb.API do
     pipe_through :api
+
+    post "/registration", RegistrationController, :create
   end
 
   if Mix.env() in [:dev, :test] do

@@ -10,4 +10,13 @@ defmodule PapaVisits.Factory do
       minutes: Faker.random_between(0, 1_000)
     }
   end
+
+  def user_creation_factory do
+    %PapaVisits.Users.User{
+      first_name: Faker.Person.En.first_name(),
+      last_name: Faker.Person.En.last_name(),
+      email: Faker.Internet.safe_email(),
+      password: Faker.String.base64(10)
+    }
+  end
 end

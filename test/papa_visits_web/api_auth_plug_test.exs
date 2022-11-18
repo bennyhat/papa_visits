@@ -69,6 +69,13 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
                |> ApiAuthPlug.fetch(@plug_config)
     end
 
+    test "given a non-phoenix token, sets user to nil", %{conn: conn} do
+      assert {_conn, nil} =
+               conn
+               |> put_req_header("authorization", "1234567890")
+               |> ApiAuthPlug.fetch(@plug_config)
+    end
+
     test "given a that has maxed out in age, sets user to nil", %{conn: conn} do
       max_age = 1
       plug_config = Keyword.put(@plug_config, :token_max_age, max_age)
