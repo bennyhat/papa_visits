@@ -46,5 +46,6 @@ defmodule PapaVisitsWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug Pow.Plug.Session, otp_app: :papa_visits
   plug PapaVisitsWeb.Router
 end

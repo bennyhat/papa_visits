@@ -26,6 +26,8 @@ defmodule PapaVisitsWeb.ConnCase do
 
       alias PapaVisitsWeb.Router.Helpers, as: Routes
 
+      alias PapaVisits.Factory
+
       # The default endpoint for testing
       @endpoint PapaVisitsWeb.Endpoint
     end

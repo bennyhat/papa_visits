@@ -4,7 +4,6 @@ SHELL = bash
 # just do a source here
 include .envrc
 
-
 # some pre-reqs to determine auto-bootstrap
 # no real files to track here so it's this way
 tool_versions_path := $(realpath .tool-versions)

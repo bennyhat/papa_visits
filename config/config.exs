@@ -3,6 +3,12 @@ import Config
 config :papa_visits,
   ecto_repos: [PapaVisits.Repo]
 
+config :papa_visits, PapaVisits.Repo, migration_primary_key: [name: :id, type: :uuid]
+
+config :papa_visits, :pow,
+  user: PapaVisits.Users.User,
+  repo: PapaVisits.Repo
+
 config :papa_visits, PapaVisitsWeb.Endpoint,
   url: [host: "localhost"],
   render_errors: [view: PapaVisitsWeb.ErrorView, accepts: ~w(html json), layout: false],
