@@ -72,5 +72,31 @@ defmodule PapaVisitsWeb.API.RegistrationControllerTest do
                |> post(path, params)
                |> json_response(500)
     end
+
+    test "given a user with duplicate email, makes that obvious", %{conn: conn} do
+      %{email: existing_email} = Factory.insert(:user)
+
+      params =
+        Factory.params_for(
+          :user_creation,
+          minutes: nil,
+          email: existing_email
+        )
+
+      path = Routes.registration_path(conn, :create)
+
+      assert %{
+               "error" => %{
+                 "errors" => %{
+                   "email" => ["has already been taken"]
+                 },
+                 "message" => "Couldn't create user",
+                 "status" => 500
+               }
+             } =
+               conn
+               |> post(path, params)
+               |> json_response(500)
+    end
   end
 end
