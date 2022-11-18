@@ -1,5 +1,4 @@
 SHELL = bash
-RELEASE = _build/shared/rel/papa_visits/bin/papa_visits
 
 # since direnv requires a bit more bootstrapping
 # just do a source here
@@ -15,8 +14,7 @@ tool_files := $(foreach tool,$(tool_versions),\
 	) \
 )
 
-.PHONY: all
-%: bootstrap
+%: bootstrap track.start.app
 	@:
 
 .PHONY: bootstrap
@@ -33,64 +31,80 @@ ifneq ($(words $(tool_versions)), $(words $(tool_files)))
 	@mix local.rebar --force
 endif
 
-.PHONY: deps
-deps:
+deps: mix.lock mix.exs
 	@mix deps.get
-	@mix deps.compile
-
-.PHONY: compile.%
-compile.%: MIX_ENV=$*
-compile.%:
-	@echo Compiling with ${MIX_ENV} deps
-	@MIX_ENV=${MIX_ENV} mix compile --warnings-as-errors
-
-.PHONY: compile
-compile: compile.dev compile.test compile.prod
+	@MIX_ENV=prod mix deps.compile
 
 define do-release
 @echo Releasing application
-@MIX_ENV=prod mix do phx.digest + release
+@MIX_ENV=prod mix do phx.digest + release --overwrite
 endef
 
+release = _build/shared/rel/papa_visits/bin/papa_visits
+release_files_config = $(shell find config -type f -name \*.exs)
+release_files_ex = $(shell find lib -type f -name \*.ex)
+release_files_assets = $(shell find assets -type f -name \*)
+start_app = $(release).pid
+
 .PHONY: release
-release:
+release: deps $(release_files_ex) $(release_files_assets) $(release_files_config)
 	@$(do-release)
 
-$(RELEASE):
+$(release): deps $(release_files_ex) $(release_files_assets) $(release_files_config)
 	@$(do-release)
 
-$(PGDATA)/PG_VERSION:
+$(PGDATA):
 	@echo Initializing psql server data
 	@initdb --username="${PGUSER}" --pwfile=<(echo "${PGPASSWORD}")
 
 .PHONY: start.db
-start.db: $(PGDATA)/PG_VERSION
+start.db: $(PGDATA)
 	@echo Starting psql server
 	@pg_ctl status &>/dev/null \
 		&& echo - Already started \
 		|| pg_ctl start
 
-define do-start
-@${RELEASE} pid &>/dev/null \
-	&& echo - Already started \
-	|| ${RELEASE} ${1}
+define track-start-app
+	@timeout 5 bash -c " \
+		until $(release) pid > $(start_app) 2>/dev/null; do \
+			rm -rf $(start_app); \
+			sleep 1; \
+		done; \
+	" || echo "- Cleaned up pid file for stopped application"
 endef
 
-.PHONY: start.app
-start.app: $(RELEASE)
+release_and_pid = $(and $(wildcard $(release)), $(wildcard $(start_app)))
+.PHONY: track.start.app
+track.start.app:
+ifneq (,$(release_and_pid))
+	@echo Tracking the application status - may take several seconds
+	@$(track-start-app)
+endif
+
+define do-start
+	$(release) ${1} ${2}
+endef
+
+$(start_app): $(release)
 	@echo Starting application
-	$(call do-start,daemon)
+	@$(call do-start,restart,&>/dev/null) \
+	|| $(call do-start,daemon)
+	@$(track-start-app)
 
 .PHONY: start.app.interactive
-start.app.interactive: $(RELEASE)
+start.app.interactive: $(release)
 	@echo Starting application
-	$(call do-start,start_iex)
+	@$(call do-start,start_iex)
 
 .PHONY: start
-start: start.db migrations.prod start.app
+start: start.db migrations.prod $(start_app)
 
 .PHONY: start.interactive
 start.interactive: start.db migrations.prod start.app.interactive
+
+.PHONY: remote
+remote:
+	@$(release) remote
 
 .PHONY: run.app
 run.app:
@@ -131,10 +145,11 @@ migrations: migrations.prod migrations.dev migrations.test
 
 .PHONY: stop.app
 stop.app:
-	@echo Stopping application
-	@${RELEASE} pid &>/dev/null \
-		&& ${RELEASE} stop \
-		|| echo - Already stopped
+ifneq (,$(wildcard $(start_app)))
+	@echo Stopping the application
+	@$(release) stop || echo - Already stopped
+	@rm -rf $(start_app)
+endif
 
 .PHONY: stop.db
 stop.db:
@@ -149,7 +164,7 @@ stop: stop.app stop.db
 .PHONY: clean.db
 clean.db: stop.db
 	@echo Cleaning postgres data
-	@rm -rf ${PGDATA}/*
+	@rm -rf ${PGDATA}
 
 .PHONY: clean
 clean: stop clean.db

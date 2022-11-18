@@ -32,4 +32,4 @@ papa_visits-*.tar
 npm-debug.log
 /assets/node_modules/
 
-.pgdata/*
+/.pgdata/
