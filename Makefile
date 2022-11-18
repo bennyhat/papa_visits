@@ -4,7 +4,9 @@ SHELL = bash
 # just do a source here
 include .envrc
 
+
 # some pre-reqs to determine auto-bootstrap
+# no real files to track here so it's this way
 tool_versions_path := $(realpath .tool-versions)
 tool_versions := $(shell awk '{ print $$1 }' $(tool_versions_path))
 tool_files := $(foreach tool,$(tool_versions),\
@@ -14,8 +16,22 @@ tool_files := $(foreach tool,$(tool_versions),\
 	) \
 )
 
-%: bootstrap track.start.app
+%: prereqs bootstrap track.start.app
 	@:
+
+darwin_and_codes = $(and $(shell uname | grep Darwin), $(shell xcode-select -p))
+.PHONY: prereqs
+prereqs:
+ifeq (, $(darwin_and_codes))
+	@echo -e Required MacOS developer tools not found. \
+		Install via "xcode-select --install"
+	@exit 1
+endif
+ifeq (,$(shell which asdf))
+	@echo -e Required program "asdf" not found. \
+		Install directions can be found at https://asdf-vm.com/guide/getting-started.html#_3-install-asdf
+	@exit 1
+endif
 
 .PHONY: bootstrap
 bootstrap:
