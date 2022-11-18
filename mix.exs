@@ -11,7 +11,7 @@ defmodule PapaVisits.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      build_per_environment: false,
+      build_per_environment: true,
       build_embedded: true
     ]
   end

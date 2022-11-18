@@ -46,7 +46,7 @@ ifneq ($(words $(tool_versions)), $(words $(tool_files)))
 	@mix local.rebar --force
 endif
 
-deps: mix.lock mix.exs
+deps: mix.lock
 	@mix deps.get
 	@MIX_ENV=prod mix deps.compile
 
@@ -55,7 +55,7 @@ define do-release
 @MIX_ENV=prod mix do phx.digest + release --overwrite
 endef
 
-release = _build/shared/rel/papa_visits/bin/papa_visits
+release = _build/prod/rel/papa_visits/bin/papa_visits
 release_files_config = $(shell find config -type f -name \*.exs)
 release_files_ex = $(shell find lib -type f -name \*.ex)
 release_files_assets = $(shell find assets -type f -name \*)
