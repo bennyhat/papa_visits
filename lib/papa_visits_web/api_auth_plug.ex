@@ -11,17 +11,20 @@ defmodule PapaVisitsWeb.ApiAuthPlug do
   alias PapaVisits.Users
   alias PapaVisits.Users.User
 
-  @token_namespace "api_auth"
-
   @doc """
   Fetches the user from access token.
   """
   @impl Pow.Plug.Base
   @spec fetch(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
-  def fetch(conn, _config) do
+  def fetch(conn, config) do
+    token_namespace = Keyword.fetch!(config, :token_namespace)
+    token_max_age = Keyword.get(config, :token_max_age, 86_400)
+
     with {:ok, token} <- fetch_access_token(conn),
          {:ok, user_id} <-
-           Phoenix.Token.verify(PapaVisitsWeb.Endpoint, @token_namespace, token, max_age: 86400),
+           Phoenix.Token.verify(PapaVisitsWeb.Endpoint, token_namespace, token,
+             max_age: token_max_age
+           ),
          user when not is_nil(user) <- Users.get(user_id) do
       {conn, user}
     else
@@ -34,8 +37,10 @@ defmodule PapaVisitsWeb.ApiAuthPlug do
   """
   @impl Pow.Plug.Base
   @spec create(Conn.t(), User.t(), Config.t()) :: {Conn.t(), map()}
-  def create(conn, user, _config) do
-    token = Phoenix.Token.sign(PapaVisitsWeb.Endpoint, @token_namespace, user.id)
+  def create(conn, user, config) do
+    token_namespace = Keyword.fetch!(config, :token_namespace)
+
+    token = Phoenix.Token.sign(PapaVisitsWeb.Endpoint, token_namespace, user.id)
 
     conn = Conn.put_private(conn, :access_token, token)
 

@@ -3,14 +3,24 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
 
   alias PapaVisitsWeb.ApiAuthPlug
 
-  @plug_config [otp_app: :papa_visits]
+  @plug_config [
+    otp_app: :papa_visits,
+    token_namespace: "test_token_namespace"
+  ]
 
   describe "create/3" do
     test "given a user with an id, generates an access token", %{conn: conn} do
-      user = Factory.build(:user)
+      %{id: id} = user = Factory.build(:user)
 
-      assert {%{private: %{access_token: _token}}, ^user} =
+      assert {%{private: %{access_token: token}}, ^user} =
                ApiAuthPlug.create(conn, user, @plug_config)
+
+      assert {:ok, ^id} =
+               Phoenix.Token.verify(
+                 PapaVisitsWeb.Endpoint,
+                 @plug_config[:token_namespace],
+                 token
+               )
     end
   end
 
@@ -41,6 +51,38 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
                conn
                |> put_req_header("authorization", token)
                |> ApiAuthPlug.fetch(@plug_config)
+    end
+
+    test "given a token not signed by us, sets user to nil", %{conn: conn} do
+      user = Factory.insert(:user)
+
+      token =
+        Phoenix.Token.sign(
+          "some_other_secret_string_that_has_to_be_really_long",
+          "some_other_namespace",
+          user.id
+        )
+
+      assert {_conn, nil} =
+               conn
+               |> put_req_header("authorization", token)
+               |> ApiAuthPlug.fetch(@plug_config)
+    end
+
+    test "given a that has maxed out in age, sets user to nil", %{conn: conn} do
+      max_age = 1
+      plug_config = Keyword.put(@plug_config, :token_max_age, max_age)
+      user = Factory.insert(:user)
+
+      assert {%{private: %{access_token: token}}, _user} =
+               ApiAuthPlug.create(conn, user, plug_config)
+
+      Process.sleep(max_age * 1_000)
+
+      assert {_conn, nil} =
+               conn
+               |> put_req_header("authorization", token)
+               |> ApiAuthPlug.fetch(plug_config)
     end
   end
 end
