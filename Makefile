@@ -62,10 +62,10 @@ release_files_assets = $(shell find assets -type f -name \*)
 start_app = $(release).pid
 
 .PHONY: release
-release: deps $(release_files_ex) $(release_files_assets) $(release_files_config)
+release: deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
 	@$(do-release)
 
-$(release): deps $(release_files_ex) $(release_files_assets) $(release_files_config)
+$(release): deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
 	@$(do-release)
 
 $(PGDATA):

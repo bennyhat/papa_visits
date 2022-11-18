@@ -1,5 +1,6 @@
 defmodule PapaVisitsWeb.ApiAuthPlugTest do
   use PapaVisitsWeb.ConnCase
+  import Assertions
 
   alias PapaVisitsWeb.ApiAuthPlug
 
@@ -76,7 +77,6 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
                |> ApiAuthPlug.fetch(@plug_config)
     end
 
-    # TODO - replace the sleep with an eventually assertion
     test "given a that has maxed out in age, sets user to nil", %{conn: conn} do
       max_age = 1
       plug_config = Keyword.put(@plug_config, :token_max_age, max_age)
@@ -85,12 +85,16 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
       assert {%{private: %{access_token: token}}, _user} =
                ApiAuthPlug.create(conn, user, plug_config)
 
-      Process.sleep(max_age * 2 * 1_000)
+      timeout = max_age * 2 * 1_000
+      # this will spin in failure faster but it pauses tests less
+      sleep = 200
 
-      assert {_conn, nil} =
-               conn
-               |> put_req_header("authorization", token)
-               |> ApiAuthPlug.fetch(plug_config)
+      assert_async(timeout: timeout, sleep_time: sleep) do
+        assert {_conn, nil} =
+                 conn
+                 |> put_req_header("authorization", token)
+                 |> ApiAuthPlug.fetch(plug_config)
+      end
     end
   end
 end
