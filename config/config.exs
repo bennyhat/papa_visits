@@ -3,7 +3,7 @@ import Config
 config :papa_visits,
   ecto_repos: [PapaVisits.Repo]
 
-config :papa_visits, PapaVisits.Repo, migration_primary_key: [name: :id, type: :uuid]
+config :papa_visits, PapaVisits.Repo, migration_primary_key: [type: :uuid]
 
 config :papa_visits, :pow,
   user: PapaVisits.Users.User,

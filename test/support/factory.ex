@@ -19,4 +19,24 @@ defmodule PapaVisits.Factory do
       password: Faker.String.base64(10)
     }
   end
+
+  def visit_params_factory do
+    %PapaVisits.Params.Visit{
+      user_id: Faker.UUID.v4(),
+      date: Faker.Date.forward(10),
+      minutes: Faker.random_between(0, 1_000),
+      tasks: [
+        build(:visit_task_params),
+        build(:visit_task_params),
+        build(:visit_task_params)
+      ]
+    }
+  end
+
+  def visit_task_params_factory do
+    %PapaVisits.Params.Visit.Tasks{
+      name: Faker.Lorem.word(),
+      description: Faker.Lorem.sentence()
+    }
+  end
 end

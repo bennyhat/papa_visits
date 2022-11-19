@@ -4,11 +4,15 @@ defmodule PapaVisits.Users.User do
 
   import Pow.Ecto.Schema.Changeset, only: [new_password_changeset: 3]
 
+  alias PapaVisits.Visits.Visit
+
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "users" do
     field :first_name, :string
     field :last_name, :string
     field :minutes, :integer, default: 120
+
+    has_many :visits, Visit
 
     pow_user_fields()
 
