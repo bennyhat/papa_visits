@@ -1,4 +1,4 @@
-defmodule PapaVisitsWeb.API.RegistrationControllerTest do
+defmodule PapaVisitsWeb.Api.RegistrationControllerTest do
   use PapaVisitsWeb.ConnCase
 
   describe "POST /registration => create/2" do
@@ -38,13 +38,13 @@ defmodule PapaVisitsWeb.API.RegistrationControllerTest do
                    "last_name" => ["can't be blank"],
                    "password" => ["can't be blank"]
                  },
-                 "message" => "Couldn't create user",
-                 "status" => 500
+                 "message" => "Validation failed.",
+                 "status" => 422
                }
              } =
                conn
                |> post(path, params)
-               |> json_response(500)
+               |> json_response(422)
     end
 
     test "given a user with invalid fields, sends error", %{conn: conn} do
@@ -64,13 +64,13 @@ defmodule PapaVisitsWeb.API.RegistrationControllerTest do
                    "email" => ["has invalid format"],
                    "password" => ["should be at least 8 character(s)"]
                  },
-                 "message" => "Couldn't create user",
-                 "status" => 500
+                 "message" => "Validation failed.",
+                 "status" => 422
                }
              } =
                conn
                |> post(path, params)
-               |> json_response(500)
+               |> json_response(422)
     end
 
     test "given a user with duplicate email, makes that obvious", %{conn: conn} do
@@ -90,13 +90,13 @@ defmodule PapaVisitsWeb.API.RegistrationControllerTest do
                  "errors" => %{
                    "email" => ["has already been taken"]
                  },
-                 "message" => "Couldn't create user",
-                 "status" => 500
+                 "message" => "Validation failed.",
+                 "status" => 422
                }
              } =
                conn
                |> post(path, params)
-               |> json_response(500)
+               |> json_response(422)
     end
   end
 end

@@ -52,7 +52,7 @@ deps: mix.lock
 
 define do-release
 @echo Releasing application
-@MIX_ENV=prod mix do phx.digest + release --overwrite
+@MIX_ENV=prod mix do assets.deploy + release --overwrite
 endef
 
 release = _build/prod/rel/papa_visits/bin/papa_visits

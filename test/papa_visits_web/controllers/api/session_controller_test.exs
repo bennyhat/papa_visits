@@ -1,4 +1,4 @@
-defmodule PapaVisitsWeb.API.SessionControllerTest do
+defmodule PapaVisitsWeb.Api.SessionControllerTest do
   use PapaVisitsWeb.ConnCase
 
   describe "POST /session => create/2" do
