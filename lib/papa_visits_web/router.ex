@@ -26,6 +26,7 @@ defmodule PapaVisitsWeb.Router do
   scope "/api", PapaVisitsWeb.Api, as: :api do
     pipe_through [:api, :api_protected]
 
+    get "/user", UserController, :show
     get "/visit", VisitController, :index
   end
 end
