@@ -79,6 +79,15 @@ defmodule PapaVisits.Visits.Visit do
   end
 
   @type t :: %__MODULE__{
+          date: Date.t(),
+          minutes: integer(),
+          tasks: [Task.t()],
+          status: atom(),
+          updated_at: DateTime.t(),
+          inserted_at: DateTime.t()
+        }
+
+  @type t_preloaded :: %__MODULE__{
           user: User.t(),
           date: Date.t(),
           minutes: integer(),

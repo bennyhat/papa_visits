@@ -347,6 +347,20 @@ defmodule PapaVisitsTest do
     end
   end
 
+  describe "get_user/1" do
+    test "gets the details for a user based on id" do
+      user =
+        Factory.insert(:user, minutes: 100)
+        |> PapaVisits.Repo.preload([:visits])
+
+      assert user == PapaVisits.get_user(user.id)
+    end
+
+    test "returns nil for missing user" do
+      assert nil == PapaVisits.get_user(Faker.UUID.v4())
+    end
+  end
+
   defp convert_errors(results) do
     Enum.map(results, &convert_error/1)
   end

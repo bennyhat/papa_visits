@@ -25,7 +25,7 @@ defmodule PapaVisitsWeb.Api.AuthPlug do
            Phoenix.Token.verify(PapaVisitsWeb.Endpoint, token_namespace, token,
              max_age: token_max_age
            ),
-         user when not is_nil(user) <- Users.get(user_id) do
+         user when not is_nil(user) <- Users.get_basic(user_id) do
       {conn, user}
     else
       _any -> {conn, nil}

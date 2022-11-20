@@ -45,7 +45,7 @@ defmodule PapaVisits.Visits do
   end
 
   @type complete_params :: TransactionParams.t()
-  @type complete_returns :: {:ok, Transaction.t()} | {:error, Ecto.Changeset.t()}
+  @type complete_returns :: {:ok, Transaction.t_preloaded()} | {:error, Ecto.Changeset.t()}
 
   @spec complete(complete_params()) :: complete_returns()
   def complete(params) do
@@ -75,7 +75,7 @@ defmodule PapaVisits.Visits do
   end
 
   @type list_params :: VisitFilterParams.t()
-  @type list_returns :: [Visit.t()]
+  @type list_returns :: [Visit.t_preloaded()]
 
   @spec list(list_params()) :: list_returns()
   def list(params) do

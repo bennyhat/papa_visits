@@ -3,6 +3,7 @@ defmodule PapaVisits do
   Main context for actual business logic.
   """
 
+  alias PapaVisits.Users
   alias PapaVisits.Visits
 
   @spec request_visit(Visits.request_params()) :: Visits.request_returns()
@@ -18,5 +19,10 @@ defmodule PapaVisits do
   @spec list_visits(Visits.list_params()) :: Visits.list_returns()
   def list_visits(params) do
     Visits.list(params)
+  end
+
+  @spec get_user(Users.get_params()) :: Users.get_returns()
+  def get_user(id) do
+    Users.get(id)
   end
 end

@@ -37,4 +37,15 @@ defmodule PapaVisits.Users.User do
           inserted_at: DateTime.t(),
           updated_at: DateTime.t()
         }
+
+  @type t_preloaded :: %__MODULE__{
+          id: Ecto.UUID.t(),
+          email: String.t(),
+          first_name: String.t(),
+          last_name: String.t(),
+          minutes: integer(),
+          visits: [Visit.t()],
+          inserted_at: DateTime.t(),
+          updated_at: DateTime.t()
+        }
 end

@@ -1,8 +1,8 @@
-defmodule PapaVisitsWeb.ApiAuthPlugTest do
+defmodule PapaVisitsWeb.Api.AuthPlugTest do
   use PapaVisitsWeb.ConnCase
   import Assertions
 
-  alias PapaVisitsWeb.ApiAuthPlug
+  alias PapaVisitsWeb.Api.AuthPlug
 
   @plug_config [
     otp_app: :papa_visits,
@@ -14,7 +14,7 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
       %{id: id} = user = Factory.build(:user)
 
       assert {%{private: %{access_token: token}}, ^user} =
-               ApiAuthPlug.create(conn, user, @plug_config)
+               AuthPlug.create(conn, user, @plug_config)
 
       assert {:ok, ^id} =
                Phoenix.Token.verify(
@@ -27,31 +27,31 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
 
   describe "fetch/2" do
     test "given no token, sets user to nil", %{conn: conn} do
-      assert {_conn, nil} = ApiAuthPlug.fetch(conn, @plug_config)
+      assert {_conn, nil} = AuthPlug.fetch(conn, @plug_config)
     end
 
     test "given a user, but one who doesn't exist, sets user to nil", %{conn: conn} do
       user = Factory.build(:user)
 
       assert {%{private: %{access_token: token}}, _user} =
-               ApiAuthPlug.create(conn, user, @plug_config)
+               AuthPlug.create(conn, user, @plug_config)
 
       assert {_conn, nil} =
                conn
                |> put_req_header("authorization", token)
-               |> ApiAuthPlug.fetch(@plug_config)
+               |> AuthPlug.fetch(@plug_config)
     end
 
     test "given an existing user in the token, sets it", %{conn: conn} do
       user = Factory.insert(:user)
 
       assert {%{private: %{access_token: token}}, _user} =
-               ApiAuthPlug.create(conn, user, @plug_config)
+               AuthPlug.create(conn, user, @plug_config)
 
       assert {_conn, ^user} =
                conn
                |> put_req_header("authorization", token)
-               |> ApiAuthPlug.fetch(@plug_config)
+               |> AuthPlug.fetch(@plug_config)
     end
 
     test "given a token not signed by us, sets user to nil", %{conn: conn} do
@@ -67,23 +67,23 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
       assert {_conn, nil} =
                conn
                |> put_req_header("authorization", token)
-               |> ApiAuthPlug.fetch(@plug_config)
+               |> AuthPlug.fetch(@plug_config)
     end
 
     test "given a non-phoenix token, sets user to nil", %{conn: conn} do
       assert {_conn, nil} =
                conn
                |> put_req_header("authorization", "1234567890")
-               |> ApiAuthPlug.fetch(@plug_config)
+               |> AuthPlug.fetch(@plug_config)
     end
 
-    test "given a that has maxed out in age, sets user to nil", %{conn: conn} do
+    test "given token that has maxed out in age, sets user to nil", %{conn: conn} do
       max_age = 1
       plug_config = Keyword.put(@plug_config, :token_max_age, max_age)
       user = Factory.insert(:user)
 
       assert {%{private: %{access_token: token}}, _user} =
-               ApiAuthPlug.create(conn, user, plug_config)
+               AuthPlug.create(conn, user, plug_config)
 
       timeout = max_age * 2 * 1_000
       # this will spin in failure faster but it pauses tests less
@@ -93,7 +93,7 @@ defmodule PapaVisitsWeb.ApiAuthPlugTest do
         assert {_conn, nil} =
                  conn
                  |> put_req_header("authorization", token)
-                 |> ApiAuthPlug.fetch(plug_config)
+                 |> AuthPlug.fetch(plug_config)
       end
     end
   end

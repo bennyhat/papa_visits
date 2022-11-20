@@ -19,6 +19,9 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
     [conn: conn_with_auth, xconn: conn]
   end
 
+  describe "POST /visit => create/2" do
+  end
+
   describe "GET /visit => index/2" do
     setup do
       users = Factory.insert_list(3, :user, minutes: 1_000_000)
@@ -86,7 +89,7 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
       assert to_string(status) == actual_visit["status"]
     end
 
-    test "unauthenticated users are not authorized", %{xconn: conn} do
+    test "unauthenticated users are not allowed", %{xconn: conn} do
       path = Routes.api_visit_path(conn, :index)
 
       assert %{
