@@ -12,7 +12,12 @@ defmodule PapaVisits.MixProject do
       aliases: aliases(),
       deps: deps(),
       build_per_environment: true,
-      build_embedded: true
+      build_embedded: true,
+      default_release_name: :papa_visits_a,
+      releases: [
+        papa_visits_a: [quiet: false],
+        papa_visits_b: [quiet: true]
+      ]
     ]
   end
 

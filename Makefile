@@ -46,27 +46,31 @@ ifneq ($(words $(tool_versions)), $(words $(tool_files)))
 	@mix local.rebar --force
 endif
 
-deps: mix.lock
+deps:
 	@mix deps.get
 	@MIX_ENV=prod mix deps.compile
 
 define do-release
 @echo Releasing application
-@MIX_ENV=prod mix do assets.deploy + release --overwrite
+@MIX_ENV=prod mix do assets.deploy + release --overwrite papa_visits_${1}
 endef
 
-release = _build/prod/rel/papa_visits/bin/papa_visits
+release_a = _build/prod/rel/papa_visits_a/bin/papa_visits_a
+release_b = _build/prod/rel/papa_visits_b/bin/papa_visits_b
 release_files_config = $(shell find config -type f -name \*.exs)
 release_files_ex = $(shell find lib -type f -name \*.ex)
 release_files_assets = $(shell find assets -type f -name \*)
-start_app = $(release).pid
+start_app = $(release_a).pid
 
 .PHONY: release
 release: deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
-	@$(do-release)
+	@$(call do-release,a)
 
-$(release): deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
-	@$(do-release)
+$(release_a): deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
+	@$(call do-release,a)
+
+$(release_b): deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
+	@$(call do-release,a)
 
 $(PGDATA):
 	@echo Initializing psql server data
@@ -81,14 +85,14 @@ start.db: $(PGDATA)
 
 define track-start-app
 	@timeout 5 bash -c " \
-		until $(release) pid > $(start_app) 2>/dev/null; do \
+		until $(release_a) pid > $(start_app) 2>/dev/null; do \
 			rm -rf $(start_app); \
 			sleep 1; \
 		done; \
 	" || echo "- Cleaned up pid file for stopped application"
 endef
 
-release_and_pid = $(and $(wildcard $(release)), $(wildcard $(start_app)))
+release_and_pid = $(and $(wildcard $(release_a)), $(wildcard $(start_app)))
 .PHONY: track.start.app
 track.start.app:
 ifneq (,$(release_and_pid))
@@ -97,17 +101,17 @@ ifneq (,$(release_and_pid))
 endif
 
 define do-start
-	$(release) ${1} ${2}
+	$(release_a) ${1} ${2}
 endef
 
-$(start_app): $(release)
+$(start_app): $(release_a)
 	@echo Starting application
 	@$(call do-start,restart,&>/dev/null) \
 	|| $(call do-start,daemon)
 	@$(track-start-app)
 
 .PHONY: start.app.interactive
-start.app.interactive: $(release)
+start.app.interactive: $(release_a)
 	@echo Starting application
 	@$(call do-start,start_iex)
 
@@ -119,7 +123,7 @@ start.interactive: start.db migrations.prod start.app.interactive
 
 .PHONY: remote
 remote:
-	@$(release) remote
+	@$(release_a) remote
 
 .PHONY: run.app
 run.app:
@@ -162,7 +166,7 @@ migrations: migrations.prod migrations.dev migrations.test
 stop.app:
 ifneq (,$(wildcard $(start_app)))
 	@echo Stopping the application
-	@$(release) stop || echo - Already stopped
+	@$(release_a) stop || echo - Already stopped
 	@rm -rf $(start_app)
 endif
 
