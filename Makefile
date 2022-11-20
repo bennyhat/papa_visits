@@ -52,15 +52,18 @@ deps:
 
 define do-release
 @echo Releasing application
-@MIX_ENV=prod mix do assets.deploy + release --overwrite papa_visits_${1}
+@MIX_ENV=prod mix do assets.deploy + release --overwrite papa_visits_$(1)
 endef
 
-release_a = _build/prod/rel/papa_visits_a/bin/papa_visits_a
-release_b = _build/prod/rel/papa_visits_b/bin/papa_visits_b
+release = _build/prod/rel/papa_visits_$(1)/bin/papa_visits_$(1)
+release_a = $(call release,a)
+release_b = $(call release,b)
+start_app = $(call release,$(1)).pid
+start_app_a = $(call start_app,a)
+start_app_b = $(call start_app,b)
 release_files_config = $(shell find config -type f -name \*.exs)
 release_files_ex = $(shell find lib -type f -name \*.ex)
 release_files_assets = $(shell find assets -type f -name \*)
-start_app = $(release_a).pid
 
 .PHONY: release
 release: deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
@@ -70,7 +73,7 @@ $(release_a): deps mix.lock $(release_files_ex) $(release_files_assets) $(releas
 	@$(call do-release,a)
 
 $(release_b): deps mix.lock $(release_files_ex) $(release_files_assets) $(release_files_config)
-	@$(call do-release,a)
+	@$(call do-release,b)
 
 $(PGDATA):
 	@echo Initializing psql server data
@@ -85,30 +88,42 @@ start.db: $(PGDATA)
 
 define track-start-app
 	@timeout 5 bash -c " \
-		until $(release_a) pid > $(start_app) 2>/dev/null; do \
-			rm -rf $(start_app); \
+		until $(call release,$(1)) pid > $(call start_app,$(1)) 2>/dev/null; do \
+			rm -rf $(call start_app,$(1)); \
 			sleep 1; \
 		done; \
 	" || echo "- Cleaned up pid file for stopped application"
 endef
 
-release_and_pid = $(and $(wildcard $(release_a)), $(wildcard $(start_app)))
+release_and_pid_a = $(and $(wildcard $(release_a)), $(wildcard $(start_app_a)))
+release_and_pid_b = $(and $(wildcard $(release_b)), $(wildcard $(start_app_b)))
 .PHONY: track.start.app
 track.start.app:
-ifneq (,$(release_and_pid))
+ifneq (,$(release_and_pid_a))
 	@echo Tracking the application status - may take several seconds
-	@$(track-start-app)
+	@$(call track-start-app,a)
+endif
+ifneq (,$(release_and_pid_b))
+	@echo Tracking the secondary application status - may take several seconds
+	@$(call track-start-app,b)
 endif
 
 define do-start
-	$(release_a) ${1} ${2}
+	$(call release,$(1)) $(2) $(3)
 endef
 
-$(start_app): $(release_a)
+$(start_app_a): $(release_a)
 	@echo Starting application
-	@$(call do-start,restart,&>/dev/null) \
-	|| $(call do-start,daemon)
-	@$(track-start-app)
+	@$(call do-start,a,restart,&>/dev/null) \
+	|| $(call do-start,a,daemon)
+	@$(call track-start-app,a)
+
+$(start_app_b): export PORT = $(PORT_SECONDARY)
+$(start_app_b): $(release_b)
+	@echo Starting secondary application on ${PORT}
+	@$(call do-start,b,restart,&>/dev/null) \
+		|| $(call do-start,b,daemon)
+	@$(call track-start-app,b)
 
 .PHONY: start.app.interactive
 start.app.interactive: $(release_a)
@@ -116,7 +131,10 @@ start.app.interactive: $(release_a)
 	@$(call do-start,start_iex)
 
 .PHONY: start
-start: start.db migrations.prod $(start_app)
+start: start.db migrations.prod $(start_app_a)
+
+.PHONY: start.secondary
+start.secondary: start.db migrations.prod $(start_app_b)
 
 .PHONY: start.interactive
 start.interactive: start.db migrations.prod start.app.interactive
@@ -154,20 +172,28 @@ run: start.db migrations.dev run.app
 run.interactive: start.db migrations.dev run.app.interactive
 
 .PHONY: migrations.%
-migrations.%: MIX_ENV=$*
+migrations.%: export MIX_ENV = $*
 migrations.%: deps
 	@echo Migrating ${MIX_ENV} database
-	@MIX_ENV=${MIX_ENV} mix do ecto.create + ecto.migrate
+	mix do ecto.create + ecto.migrate
 
 .PHONY: migrations
 migrations: migrations.prod migrations.dev migrations.test
 
-.PHONY: stop.app
-stop.app:
-ifneq (,$(wildcard $(start_app)))
+.PHONY: stop.app.a
+stop.app.a:
+ifneq (,$(wildcard $(start_app_a)))
 	@echo Stopping the application
 	@$(release_a) stop || echo - Already stopped
-	@rm -rf $(start_app)
+	@rm -rf $(start_app_a)
+endif
+
+.PHONY: stop.app.b
+stop.app.b:
+ifneq (,$(wildcard $(start_app_b)))
+	@echo Stopping the secondary application
+	@$(release_b) stop || echo - Already stopped
+	@rm -rf $(start_app_b)
 endif
 
 .PHONY: stop.db
@@ -178,7 +204,7 @@ stop.db:
 		|| echo - Already stopped
 
 .PHONY: stop
-stop: stop.app stop.db
+stop: stop.app.a stop.app.b stop.db
 
 .PHONY: clean.db
 clean.db: stop.db
