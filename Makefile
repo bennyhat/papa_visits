@@ -171,6 +171,16 @@ run: start.db migrations.dev run.app
 .PHONY: run.interactive
 run.interactive: start.db migrations.dev run.app.interactive
 
+.PHONY: test
+test:
+	@echo Running tests
+	mix test
+
+.PHONY: test.integration
+test.integration: start start.secondary
+	@echo Running integration tests
+	mix test.integration
+
 .PHONY: migrations.%
 migrations.%: export MIX_ENV = $*
 migrations.%: deps

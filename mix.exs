@@ -17,7 +17,8 @@ defmodule PapaVisits.MixProject do
       releases: [
         papa_visits_a: [quiet: false],
         papa_visits_b: [quiet: true]
-      ]
+      ],
+      test_paths: test_paths(Mix.env())
     ]
   end
 
@@ -36,6 +37,20 @@ defmodule PapaVisits.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp test_paths(_) do
+    case System.get_env("TEST_TIER", "unit") do
+      "unit" -> ["test/unit"]
+      "integration" -> ["test/integration"]
+      other -> raise "Unrecognized TEST_TIER=#{other}"
+    end
+  end
+
+  defp test(tier, args) do
+    string_args = Enum.join(args, " ")
+    exit_code = Mix.shell().cmd("mix test --color #{string_args}", env: [{"TEST_TIER", tier}])
+    exit({:shutdown, exit_code})
+  end
 
   defp deps do
     [
@@ -69,7 +84,9 @@ defmodule PapaVisits.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.deploy": ["esbuild default --minify", "phx.digest"]
+      "assets.deploy": ["esbuild default --minify", "phx.digest"],
+      "test.integration": &test("integration", &1 ++ ["--no-start"]),
+      "test.unit": &test("unit", &1)
     ]
   end
 end
