@@ -172,5 +172,28 @@ defmodule PapaVisitsTest do
                 visit: %{status: :completed}
               }} = PapaVisits.complete_visit(params)
     end
+
+    test "given concurrent completions of same transaction, rejects one", %{
+      visit: visit,
+      papa: papa,
+      pal: pal
+    } do
+      params =
+        Factory.build(
+          :transaction_params,
+          papa_id: papa.id,
+          pal_id: pal.id,
+          visit_id: visit.id
+        )
+
+      task_one = Task.async(fn -> PapaVisits.complete_visit(params) end)
+      task_two = Task.async(fn -> PapaVisits.complete_visit(params) end)
+
+      result_one = Task.await(task_one)
+      result_two = Task.await(task_two)
+
+      assert {:error, :visit_not_active} in [result_one, result_two]
+      refute result_one == result_two
+    end
   end
 end

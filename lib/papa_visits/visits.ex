@@ -49,11 +49,12 @@ defmodule PapaVisits.Visits do
   def complete(params) do
     transaction =
       Multi.new()
-      |> Multi.insert(:transaction, Transaction.changeset(params))
-      |> Multi.update(:complete_visit, fn %{transaction: transaction} ->
-        %{visit: visit} = Repo.preload(transaction, [:visit])
+      |> Multi.one(:visit, &transaction_visit(&1, params.visit_id))
+      |> Multi.run(:check_visit, &check_visit/2)
+      |> Multi.update(:complete_visit, fn %{visit: visit} ->
         Visit.status_changeset(visit, :completed)
       end)
+      |> Multi.insert(:transaction, Transaction.changeset(params))
       |> Multi.update_all(:take_from_papa, &take_from_papa/1, [])
       |> Multi.update_all(:give_to_pal, &give_to_pal/1, [])
       |> Multi.run(:check_transaction, &check_transaction/2)
@@ -104,6 +105,17 @@ defmodule PapaVisits.Visits do
 
   defp check_allowed(_repo, %{allowed?: true}), do: {:ok, :within_budget}
   defp check_allowed(_repo, _), do: {:error, :exceeds_budget}
+
+  defp transaction_visit(_, visit_id) do
+    from v in Visit, where: v.id == ^visit_id
+  end
+
+  defp check_visit(_, %{visit: nil}), do: {:error, :visit_not_found}
+
+  defp check_visit(_, %{visit: %{status: status}}) when status != :requested,
+    do: {:error, :visit_not_active}
+
+  defp check_visit(_, %{visit: _visit}), do: {:ok, :visit_active}
 
   defp take_from_papa(%{transaction: transaction}) do
     papa_id = transaction.papa_id
