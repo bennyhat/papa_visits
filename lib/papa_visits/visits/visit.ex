@@ -50,7 +50,7 @@ defmodule PapaVisits.Visits.Visit do
     |> cast(params, [:date, :minutes])
     |> validate_required([:date, :minutes, :user_id])
     |> cast_assoc(:tasks, required: true)
-    |> foreign_key_constraint(:user_id, message: "user does not exist")
+    |> foreign_key_constraint(:user_id, message: "papa not found")
     |> validate_number(:minutes, greater_than: 0)
     |> validate_date_is_at_least_today()
   end

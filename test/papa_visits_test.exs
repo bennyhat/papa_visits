@@ -110,7 +110,6 @@ defmodule PapaVisitsTest do
       params =
         Factory.build(
           :transaction_params,
-          papa_id: papa.id,
           pal_id: pal.id,
           visit_id: visit.id
         )
@@ -120,9 +119,11 @@ defmodule PapaVisitsTest do
 
       assert {:ok,
               %Transaction{
-                papa: %{minutes: ^expected_papa_minutes},
                 pal: %{minutes: ^expected_pal_minutes},
-                visit: %{status: :completed}
+                visit: %{
+                  status: :completed,
+                  user: %{minutes: ^expected_papa_minutes}
+                }
               }} = PapaVisits.complete_visit(params)
     end
 
@@ -140,7 +141,6 @@ defmodule PapaVisitsTest do
       params =
         Factory.build(
           :transaction_params,
-          papa_id: papa.id,
           pal_id: pal.id,
           visit_id: visit.id
         )
@@ -149,8 +149,7 @@ defmodule PapaVisitsTest do
 
       assert {:ok,
               %Transaction{
-                pal: %{minutes: ^expected_pal_minutes},
-                visit: %{status: :completed}
+                pal: %{minutes: ^expected_pal_minutes}
               }} = PapaVisits.complete_visit(params)
     end
 
@@ -168,7 +167,6 @@ defmodule PapaVisitsTest do
       params =
         Factory.build(
           :transaction_params,
-          papa_id: papa.id,
           pal_id: pal.id,
           visit_id: visit.id
         )
@@ -177,20 +175,17 @@ defmodule PapaVisitsTest do
 
       assert {:ok,
               %Transaction{
-                pal: %{minutes: ^expected_pal_minutes},
-                visit: %{status: :completed}
+                pal: %{minutes: ^expected_pal_minutes}
               }} = PapaVisits.complete_visit(params)
     end
 
     test "given concurrent completions of same transaction, rejects one", %{
       visit: visit,
-      papa: papa,
       pal: pal
     } do
       params =
         Factory.build(
           :transaction_params,
-          papa_id: papa.id,
           pal_id: pal.id,
           visit_id: visit.id
         )
@@ -210,13 +205,11 @@ defmodule PapaVisitsTest do
 
     test "given already complete visit, it rejects it", %{
       visit: visit,
-      papa: papa,
       pal: pal
     } do
       params =
         Factory.build(
           :transaction_params,
-          papa_id: papa.id,
           pal_id: pal.id,
           visit_id: visit.id
         )
@@ -228,13 +221,12 @@ defmodule PapaVisitsTest do
              } = convert_error(PapaVisits.complete_visit(params))
     end
 
-    test "given a missing pal, it rejects it", %{papa: papa, visit: visit} do
+    test "given a missing pal, it rejects it", %{visit: visit} do
       pal = Factory.build(:user)
 
       params =
         Factory.build(
           :transaction_params,
-          papa_id: papa.id,
           pal_id: pal.id,
           visit_id: visit.id
         )
@@ -244,29 +236,12 @@ defmodule PapaVisitsTest do
              } = convert_error(PapaVisits.complete_visit(params))
     end
 
-    test "given a missing papa, it rejects it", %{pal: pal, visit: visit} do
-      papa = Factory.build(:user)
-
-      params =
-        Factory.build(
-          :transaction_params,
-          papa_id: papa.id,
-          pal_id: pal.id,
-          visit_id: visit.id
-        )
-
-      assert %{
-               papa_id: ["papa not found"]
-             } = convert_error(PapaVisits.complete_visit(params))
-    end
-
-    test "given a missing visit, it rejects it", %{pal: pal, papa: papa} do
+    test "given a missing visit, it rejects it", %{pal: pal} do
       visit = Factory.build(:visit)
 
       params =
         Factory.build(
           :transaction_params,
-          papa_id: papa.id,
           pal_id: pal.id,
           visit_id: visit.id
         )
@@ -275,8 +250,6 @@ defmodule PapaVisitsTest do
                visit_id: ["visit not found"]
              } = convert_error(PapaVisits.complete_visit(params))
     end
-
-    # TODO - given a visit that does not belong to specified papa
   end
 
   describe "list_visits/1" do
@@ -305,7 +278,7 @@ defmodule PapaVisitsTest do
       params = %VisitFilterParams{}
 
       # verifying ordering and preloads
-      expected_visits = Enum.sort_by(visits, &Map.get(&1, :date))
+      expected_visits = Enum.sort_by(visits, &Map.get(&1, :date), Date)
       expected_visit_ids = for v <- expected_visits, do: v.id
       expected_user_ids = for v <- expected_visits, do: v.user.id
       expected_task_ids = for v <- expected_visits, t <- v.tasks, do: t.id

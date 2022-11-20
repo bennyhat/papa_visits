@@ -173,13 +173,12 @@ defmodule PapaVisits.Visits do
   defp check_visit(_, %{visit: _visit}, _params), do: {:ok, :visit_active}
 
   defp take_from_papa(%{transaction: transaction}) do
-    papa_id = transaction.papa_id
     visit_id = transaction.visit_id
 
     from u in User,
-      where: u.id == ^papa_id,
       join: v in Visit,
-      on: v.id == ^visit_id and v.user_id == ^papa_id,
+      on: v.id == ^visit_id,
+      where: u.id == v.user_id,
       update: [set: [minutes: u.minutes - v.minutes]]
   end
 
@@ -198,5 +197,5 @@ defmodule PapaVisits.Visits do
   defp check_transaction(_repo, %{give_to_pal: {0, _}}), do: {:error, :pal_not_found}
 
   defp check_transaction(repo, %{transaction: transaction}),
-    do: {:ok, repo.preload(transaction, [:papa, :pal, :visit])}
+    do: {:ok, repo.preload(transaction, [:pal, visit: [:user]])}
 end

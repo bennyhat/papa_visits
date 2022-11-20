@@ -65,7 +65,6 @@ defmodule PapaVisits.Factory do
 
   def transaction_params_factory do
     %PapaVisits.Params.Transaction{
-      papa_id: Faker.UUID.v4(),
       pal_id: Faker.UUID.v4(),
       visit_id: Faker.UUID.v4()
     }

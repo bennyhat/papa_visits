@@ -10,7 +10,6 @@ defmodule PapaVisits.Visits.Transaction do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "transactions" do
-    belongs_to :papa, User
     belongs_to :pal, User
     belongs_to :visit, Visit
 
@@ -20,7 +19,6 @@ defmodule PapaVisits.Visits.Transaction do
   @spec unvalidated_changeset(TransactionParams.t()) :: Ecto.Changeset.t()
   def unvalidated_changeset(params) do
     schema = %__MODULE__{
-      papa_id: params.papa_id,
       pal_id: params.pal_id,
       visit_id: params.visit_id
     }
@@ -31,7 +29,6 @@ defmodule PapaVisits.Visits.Transaction do
   @spec changeset(map() | TransactionParams.t()) :: Ecto.Changeset.t()
   def changeset(params) do
     schema = %__MODULE__{
-      papa_id: params.papa_id,
       pal_id: params.pal_id,
       visit_id: params.visit_id
     }
@@ -50,12 +47,10 @@ defmodule PapaVisits.Visits.Transaction do
     schema
     |> cast(params, [])
     |> foreign_key_constraint(:pal_id, message: "pal not found")
-    |> foreign_key_constraint(:papa_id, message: "papa not found")
     |> foreign_key_constraint(:visit_id, message: "visit not found")
   end
 
   @type t :: %__MODULE__{
-          papa: User.t(),
           pal: User.t(),
           visit: Visit.t(),
           updated_at: DateTime.t(),
