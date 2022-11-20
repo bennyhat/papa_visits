@@ -14,8 +14,8 @@ defmodule PapaVisitsWeb.Api.FallbackController do
     send_changeset_errors(conn, errors, message)
   end
 
-  def call(conn, {:error, %Ecto.Changeset{}, _conn} = pow_goofiness) do
-    call(conn, pow_goofiness)
+  def call(conn, {:error, %Ecto.Changeset{} = changeset, _conn}) do
+    call(conn, {:error, changeset})
   end
 
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
