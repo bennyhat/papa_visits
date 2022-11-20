@@ -14,4 +14,9 @@ defmodule PapaVisits do
   def complete_visit(params) do
     Visits.complete(params)
   end
+
+  @spec list_visits(Visits.list_params()) :: Visits.list_returns()
+  def list_visits(params) do
+    Visits.list(params)
+  end
 end

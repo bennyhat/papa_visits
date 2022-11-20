@@ -7,7 +7,9 @@ defmodule PapaVisits.Visits do
   import Ecto.Query
 
   alias Ecto.Multi
+  alias PapaVisits.Params.Transaction, as: TransactionParams
   alias PapaVisits.Params.Visit, as: VisitParams
+  alias PapaVisits.Params.VisitFilter, as: VisitFilterParams
   alias PapaVisits.Repo
   alias PapaVisits.Users.User
   alias PapaVisits.Visits.Visit
@@ -70,6 +72,29 @@ defmodule PapaVisits.Visits do
       other ->
         other
     end
+  end
+
+  @type list_params :: VisitFilterParams.t()
+  @type list_returns :: [Visit.t()]
+
+  @spec list(list_params()) :: list_returns()
+  def list(params) do
+    conditions =
+      Enum.reduce(Map.from_struct(params), true, fn
+        {_field, nil}, existing ->
+          existing
+
+        {field_name, field_value}, existing ->
+          dynamic([q], field(q, ^field_name) == ^field_value and ^existing)
+      end)
+
+    query =
+      from v in Visit,
+        order_by: [asc: v.date],
+        preload: [:tasks, :user],
+        where: ^conditions
+
+    Repo.all(query)
   end
 
   defp validate_changeset(_repo, %{changeset: %{valid?: true} = changeset}), do: {:ok, changeset}

@@ -1,6 +1,7 @@
 defmodule PapaVisitsTest do
   use PapaVisits.DataCase
 
+  alias PapaVisits.Params.VisitFilter, as: VisitFilterParams
   alias PapaVisits.Visits.Visit
   alias PapaVisits.Visits.Transaction
   alias PapaVisitsWeb.ErrorHelpers
@@ -273,6 +274,103 @@ defmodule PapaVisitsTest do
       assert %{
                visit_id: ["visit not found"]
              } = convert_error(PapaVisits.complete_visit(params))
+    end
+
+    # TODO - given a visit that does not belong to specified papa
+  end
+
+  describe "list_visits/1" do
+    setup do
+      users = Factory.insert_list(3, :user, minutes: 1_000_000)
+
+      requested_visits =
+        for papa <- users do
+          Factory.insert(:visit, user: papa, minutes: 10, status: :requested)
+        end
+
+      completed_visits =
+        for papa <- users do
+          Factory.insert(:visit, user: papa, minutes: 10, status: :completed)
+        end
+
+      [
+        users: users,
+        visits: requested_visits ++ completed_visits,
+        requested_visits: requested_visits,
+        completed_visits: completed_visits
+      ]
+    end
+
+    test "given no filters, returns all visits, ordered by closest date", %{visits: visits} do
+      params = %VisitFilterParams{}
+
+      # verifying ordering and preloads
+      expected_visits = Enum.sort_by(visits, &Map.get(&1, :date))
+      expected_visit_ids = for v <- expected_visits, do: v.id
+      expected_user_ids = for v <- expected_visits, do: v.user.id
+      expected_task_ids = for v <- expected_visits, t <- v.tasks, do: t.id
+
+      assert actual_visits = PapaVisits.list_visits(params)
+
+      actual_visit_ids = for v <- actual_visits, do: v.id
+      actual_user_ids = for v <- actual_visits, do: v.user.id
+      actual_task_ids = for v <- actual_visits, t <- v.tasks, do: t.id
+
+      assert expected_visit_ids == actual_visit_ids
+      assert expected_user_ids == actual_user_ids
+      assert Enum.sort(expected_task_ids) == Enum.sort(actual_task_ids)
+    end
+
+    test "given a user id filter, returns only visits for that user", %{users: users} do
+      for user <- users do
+        params = %VisitFilterParams{user_id: user.id}
+
+        %{visits: visits} = PapaVisits.Repo.preload(user, [:visits])
+        expected_visit_ids = for v <- visits, do: v.id
+
+        assert actual_visits = PapaVisits.list_visits(params)
+
+        actual_visit_ids = for v <- actual_visits, do: v.id
+
+        assert Enum.sort(expected_visit_ids) == Enum.sort(actual_visit_ids)
+      end
+    end
+
+    test "given a status filter, returns only visits for that status", %{visits: visits} do
+      for status <- [:completed, :requested] do
+        params = %VisitFilterParams{status: status}
+
+        expected_visit_ids = for v <- visits, v.status == status, do: v.id
+
+        assert actual_visits = PapaVisits.list_visits(params)
+
+        actual_visit_ids = for v <- actual_visits, do: v.id
+
+        assert Enum.sort(expected_visit_ids) == Enum.sort(actual_visit_ids)
+      end
+    end
+
+    test "given all filters, returns applicable results", %{users: users} do
+      for user <- users do
+        for status <- [:completed, :requested] do
+          params = %VisitFilterParams{user_id: user.id, status: status}
+
+          %{visits: visits} = PapaVisits.Repo.preload(user, [:visits])
+          expected_visit_ids = for v <- visits, v.status == status, do: v.id
+
+          assert actual_visits = PapaVisits.list_visits(params)
+
+          actual_visit_ids = for v <- actual_visits, do: v.id
+
+          assert Enum.sort(expected_visit_ids) == Enum.sort(actual_visit_ids)
+        end
+      end
+    end
+
+    test "given filters that return no results, returns empty list" do
+      params = %VisitFilterParams{user_id: Faker.UUID.v4()}
+
+      assert [] == PapaVisits.list_visits(params)
     end
   end
 

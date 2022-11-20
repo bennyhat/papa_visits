@@ -17,6 +17,7 @@ defmodule PapaVisits.Factory do
       user: build(:user),
       date: Faker.Date.forward(10),
       minutes: Faker.random_between(0, 1_000),
+      status: Enum.random([:completed, :requested, :canceled]),
       tasks: [
         build(:visit_task),
         build(:visit_task),
@@ -67,6 +68,13 @@ defmodule PapaVisits.Factory do
       papa_id: Faker.UUID.v4(),
       pal_id: Faker.UUID.v4(),
       visit_id: Faker.UUID.v4()
+    }
+  end
+
+  def visit_filter_params_factory do
+    %PapaVisits.Params.VisitFilter{
+      user_id: Faker.UUID.v4(),
+      status: Enum.random([:completed, :requested, :canceled])
     }
   end
 end
