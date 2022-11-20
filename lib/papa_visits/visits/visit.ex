@@ -21,6 +21,15 @@ defmodule PapaVisits.Visits.Visit do
     timestamps()
   end
 
+  @spec unvalidated_changeset(VisitParams.t()) :: Ecto.Changeset.t()
+  def unvalidated_changeset(params) do
+    schema = %__MODULE__{
+      user_id: params.user_id
+    }
+
+    change(schema, %{})
+  end
+
   @spec changeset(map() | VisitParams.t()) ::
           {:ok, Ecto.Changeset.t()} | {:error, Ecto.Changeset.t()}
   def changeset(params) do

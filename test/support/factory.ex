@@ -11,6 +11,28 @@ defmodule PapaVisits.Factory do
     }
   end
 
+  def visit_factory do
+    %PapaVisits.Visits.Visit{
+      id: Faker.UUID.v4(),
+      user: build(:user),
+      date: Faker.Date.forward(10),
+      minutes: Faker.random_between(0, 1_000),
+      tasks: [
+        build(:visit_task),
+        build(:visit_task),
+        build(:visit_task)
+      ]
+    }
+  end
+
+  def visit_task_factory do
+    %PapaVisits.Visits.Task{
+      id: Faker.UUID.v4(),
+      name: Faker.Lorem.word(),
+      description: Faker.Lorem.sentence()
+    }
+  end
+
   def user_creation_factory do
     %PapaVisits.Users.User{
       first_name: Faker.Person.En.first_name(),

@@ -17,14 +17,26 @@ defmodule PapaVisits.Visits.Transaction do
     timestamps()
   end
 
-  @spec changeset(map() | TransactionParams.t()) :: Ecto.Changeset.t()
-  def changeset(params) do
-    %__MODULE__{
+  @spec unvalidated_changeset(TransactionParams.t()) :: Ecto.Changeset.t()
+  def unvalidated_changeset(params) do
+    schema = %__MODULE__{
       papa_id: params.papa_id,
       pal_id: params.pal_id,
       visit_id: params.visit_id
     }
-    |> changeset(params)
+
+    change(schema, %{})
+  end
+
+  @spec changeset(map() | TransactionParams.t()) :: Ecto.Changeset.t()
+  def changeset(params) do
+    schema = %__MODULE__{
+      papa_id: params.papa_id,
+      pal_id: params.pal_id,
+      visit_id: params.visit_id
+    }
+
+    changeset(schema, params)
   end
 
   @spec changeset(t(), map() | TransactionParams.t()) :: Ecto.Changeset.t()
@@ -37,9 +49,9 @@ defmodule PapaVisits.Visits.Transaction do
   def changeset(schema, params) do
     schema
     |> cast(params, [])
-    |> foreign_key_constraint(:papa_id, message: "papa does not exist")
-    |> foreign_key_constraint(:pal_id, message: "pal does not exist")
-    |> foreign_key_constraint(:visit_id, message: "visit does not exist")
+    |> foreign_key_constraint(:pal_id, message: "pal not found")
+    |> foreign_key_constraint(:papa_id, message: "papa not found")
+    |> foreign_key_constraint(:visit_id, message: "visit not found")
   end
 
   @type t :: %__MODULE__{

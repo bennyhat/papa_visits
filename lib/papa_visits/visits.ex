@@ -15,7 +15,7 @@ defmodule PapaVisits.Visits do
 
   @type create_params :: VisitParams.t()
   @type create_returns ::
-          {:ok, Visit.t()} | {:error, Ecto.Changeset.t() | :exceeds_budget | :user_not_found}
+          {:ok, Visit.t()} | {:error, Ecto.Changeset.t()}
 
   @spec create(create_params) :: create_returns()
   def create(params) do
@@ -24,9 +24,9 @@ defmodule PapaVisits.Visits do
       |> Multi.run(:changeset, fn _repo, _ -> {:ok, Visit.changeset(params)} end)
       |> Multi.run(:validate, &validate_changeset/2)
       |> Multi.one(:minutes, &user_minutes/1)
-      |> Multi.run(:check_minutes, &check_minutes/2)
+      |> Multi.run(:check_minutes, &check_minutes(&1, &2, params))
       |> Multi.one(:allowed?, &allowed?/1)
-      |> Multi.run(:check_allowed, &check_allowed/2)
+      |> Multi.run(:check_allowed, &check_allowed(&1, &2, params))
       |> Multi.insert(:request, &Map.get(&1, :changeset))
       |> Repo.transaction()
 
@@ -50,7 +50,7 @@ defmodule PapaVisits.Visits do
     transaction =
       Multi.new()
       |> Multi.one(:visit, &transaction_visit(&1, params.visit_id))
-      |> Multi.run(:check_visit, &check_visit/2)
+      |> Multi.run(:check_visit, &check_visit(&1, &2, params))
       |> Multi.update(:complete_visit, fn %{visit: visit} ->
         Visit.status_changeset(visit, :completed)
       end)
@@ -100,22 +100,52 @@ defmodule PapaVisits.Visits do
       select: ^available_minutes >= coalesce(sum(coalesce(v.minutes, 0)), 0)
   end
 
-  defp check_minutes(_repo, %{minutes: nil}), do: {:error, :user_not_found}
-  defp check_minutes(_repo, _), do: {:ok, :user_and_minutes_found}
+  defp check_minutes(_repo, %{minutes: nil}, params) do
+    changeset =
+      params
+      |> Visit.unvalidated_changeset()
+      |> Ecto.Changeset.add_error(:user_id, "user not found")
 
-  defp check_allowed(_repo, %{allowed?: true}), do: {:ok, :within_budget}
-  defp check_allowed(_repo, _), do: {:error, :exceeds_budget}
-
-  defp transaction_visit(_, visit_id) do
-    from v in Visit, where: v.id == ^visit_id
+    {:error, changeset}
   end
 
-  defp check_visit(_, %{visit: nil}), do: {:error, :visit_not_found}
+  defp check_minutes(_repo, _, _), do: {:ok, :user_and_minutes_found}
 
-  defp check_visit(_, %{visit: %{status: status}}) when status != :requested,
-    do: {:error, :visit_not_active}
+  defp check_allowed(_repo, %{allowed?: true}, _), do: {:ok, :within_budget}
 
-  defp check_visit(_, %{visit: _visit}), do: {:ok, :visit_active}
+  defp check_allowed(_repo, _, params) do
+    changeset =
+      params
+      |> Visit.unvalidated_changeset()
+      |> Ecto.Changeset.add_error(:minutes, "exceeds budget")
+
+    {:error, changeset}
+  end
+
+  defp transaction_visit(_, visit_id) do
+    # Same deal with `FOR UPDATE` here to deal with multi repo-process scenarios
+    from v in Visit, where: v.id == ^visit_id, lock: "FOR UPDATE"
+  end
+
+  defp check_visit(_, %{visit: nil}, params) do
+    changeset =
+      params
+      |> Transaction.unvalidated_changeset()
+      |> Ecto.Changeset.add_error(:visit_id, "visit not found")
+
+    {:error, changeset}
+  end
+
+  defp check_visit(_, %{visit: %{status: status}}, params) when status != :requested do
+    changeset =
+      params
+      |> Transaction.unvalidated_changeset()
+      |> Ecto.Changeset.add_error(:visit_id, "visit not active")
+
+    {:error, changeset}
+  end
+
+  defp check_visit(_, %{visit: _visit}, _params), do: {:ok, :visit_active}
 
   defp take_from_papa(%{transaction: transaction}) do
     papa_id = transaction.papa_id
@@ -139,8 +169,8 @@ defmodule PapaVisits.Visits do
       update: [set: [minutes: fragment("round(?)", u.minutes + v.minutes * 0.85)]]
   end
 
-  defp check_transaction(_repo, %{take_from_papa: {0, _}}), do: {:error, :transaction_failed}
-  defp check_transaction(_repo, %{give_to_pal: {0, _}}), do: {:error, :transaction_failed}
+  defp check_transaction(_repo, %{take_from_papa: {0, _}}), do: {:error, :papa_not_found}
+  defp check_transaction(_repo, %{give_to_pal: {0, _}}), do: {:error, :pal_not_found}
 
   defp check_transaction(repo, %{transaction: transaction}),
     do: {:ok, repo.preload(transaction, [:papa, :pal, :visit])}
