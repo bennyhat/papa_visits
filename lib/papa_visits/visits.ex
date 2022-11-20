@@ -17,7 +17,7 @@ defmodule PapaVisits.Visits do
 
   @type create_params :: VisitParams.t()
   @type create_returns ::
-          {:ok, Visit.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Visit.t_preloaded()} | {:error, Ecto.Changeset.t()}
 
   @spec create(create_params) :: create_returns()
   def create(params) do
@@ -30,11 +30,12 @@ defmodule PapaVisits.Visits do
       |> Multi.one(:allowed?, &allowed?/1)
       |> Multi.run(:check_allowed, &check_allowed(&1, &2, params))
       |> Multi.insert(:request, &Map.get(&1, :changeset))
+      |> Multi.run(:preload, &preload_visit/2)
       |> Repo.transaction()
 
     case transaction do
-      {:ok, %{request: request}} ->
-        {:ok, request}
+      {:ok, %{preload: preload}} ->
+        {:ok, preload}
 
       {:error, _step, error, _} ->
         {:error, error}
@@ -145,6 +146,10 @@ defmodule PapaVisits.Visits do
       |> Ecto.Changeset.add_error(:minutes, "exceeds budget")
 
     {:error, changeset}
+  end
+
+  defp preload_visit(repo, %{request: request}) do
+    {:ok, repo.preload(request, [:user])}
   end
 
   defp transaction_visit(_, visit_id) do

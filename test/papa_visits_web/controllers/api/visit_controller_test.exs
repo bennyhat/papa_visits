@@ -1,5 +1,6 @@
 defmodule PapaVisitsWeb.Api.VisitControllerTest do
   use PapaVisitsWeb.ConnCase
+  import Assertions
 
   setup %{conn: conn} do
     params = Factory.string_params_for(:user_creation, minutes: nil)
@@ -16,10 +17,136 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
 
     conn_with_auth = put_req_header(conn, "authorization", token)
 
-    [conn: conn_with_auth, xconn: conn]
+    user_path = Routes.api_user_path(conn, :show)
+
+    %{"data" => user} =
+      conn_with_auth
+      |> get(user_path)
+      |> json_response(200)
+
+    [conn: conn_with_auth, xconn: conn, user: user]
   end
 
   describe "POST /visit => create/2" do
+    test "given valid visit params, creates visit", %{conn: conn, user: user} do
+      params = Factory.string_params_for(:visit_params, minutes: user["minutes"], user_id: nil)
+      path = Routes.api_visit_path(conn, :create)
+
+      expected_user_id = user["id"]
+
+      expected_date =
+        to_string(%Date{
+          day: params["date"]["day"],
+          month: params["date"]["month"],
+          year: params["date"]["year"]
+        })
+
+      expected_tasks = params["tasks"]
+      expected_minutes = params["minutes"]
+      expected_status = "requested"
+
+      assert %{
+               "data" => %{
+                 "id" => _,
+                 "date" => ^expected_date,
+                 "tasks" => actual_tasks,
+                 "minutes" => ^expected_minutes,
+                 "status" => ^expected_status,
+                 "user" => %{
+                   "id" => ^expected_user_id
+                 }
+               }
+             } =
+               conn
+               |> post(path, params)
+               |> json_response(200)
+
+      assert Enum.count(expected_tasks) == Enum.count(actual_tasks)
+
+      for expected_task <- expected_tasks do
+        comparison = fn a, b ->
+          name = a["name"]
+          description = a["description"]
+
+          match?(
+            %{
+              "id" => _,
+              "name" => ^name,
+              "description" => ^description
+            },
+            b
+          )
+        end
+
+        assert_map_in_list(expected_task, actual_tasks, comparison)
+      end
+    end
+
+    test "given syntactic validation failures, reflects those", %{conn: conn} do
+      params =
+        Factory.string_params_for(
+          :visit_params,
+          user_id: nil,
+          minutes: "-A",
+          date: "not-a-date",
+          tasks: [%{"missing" => "name"}]
+        )
+
+      path = Routes.api_visit_path(conn, :create)
+
+      assert %{
+               "error" => %{
+                 "status" => 422,
+                 "message" => "Parameter validation failed.",
+                 "errors" => %{
+                   "minutes" => ["is invalid"],
+                   "date" => ["is invalid"],
+                   "tasks" => [
+                     %{
+                       "name" => ["can't be blank"]
+                     }
+                   ]
+                 }
+               }
+             } =
+               conn
+               |> post(path, params)
+               |> json_response(422)
+    end
+
+    test "given semantic validation failure reflects those errors", %{conn: conn, user: user} do
+      exceeding_minutes = user["minutes"] + 1
+      params = Factory.string_params_for(:visit_params, minutes: exceeding_minutes, user_id: nil)
+      path = Routes.api_visit_path(conn, :create)
+
+      assert %{
+               "error" => %{
+                 "status" => 422,
+                 "message" => "Validation failed.",
+                 "errors" => %{
+                   "minutes" => ["exceeds budget"]
+                 }
+               }
+             } =
+               conn
+               |> post(path, params)
+               |> json_response(422)
+    end
+
+    test "unauthenticated users are not allowed", %{xconn: conn, user: user} do
+      params = Factory.string_params_for(:visit_params, minutes: user["minutes"], user_id: nil)
+      path = Routes.api_visit_path(conn, :create)
+
+      assert %{
+               "error" => %{
+                 "status" => 401,
+                 "message" => "Not authenticated"
+               }
+             } =
+               conn
+               |> post(path, params)
+               |> json_response(401)
+    end
   end
 
   describe "GET /visit => index/2" do

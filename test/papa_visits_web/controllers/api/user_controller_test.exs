@@ -35,6 +35,7 @@ defmodule PapaVisitsWeb.Api.UserControllerTest do
                |> json_response(200)
 
       assert %{
+               "id" => _,
                "first_name" => ^expected_first_name,
                "last_name" => ^expected_last_name,
                "email" => ^expected_email

@@ -14,7 +14,11 @@ defmodule PapaVisitsWeb.Api.FallbackController do
     send_changeset_errors(conn, errors, message)
   end
 
-  def call(conn, {:error, %Ecto.Changeset{} = changeset, _conn}) do
+  def call(conn, {:error, %Ecto.Changeset{}, _conn} = pow_goofiness) do
+    call(conn, pow_goofiness)
+  end
+
+  def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     errors = Changeset.traverse_errors(changeset, &ErrorHelpers.translate_error/1)
     message = "Validation failed."
 

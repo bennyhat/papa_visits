@@ -11,6 +11,12 @@ defmodule PapaVisitsWeb.Api.VisitView do
     }
   end
 
+  def render("show.json", %{visit: visit}) do
+    %{
+      data: render(__MODULE__, "visit.json", visit: visit)
+    }
+  end
+
   def render("visit.json", %{visit: %Visit{} = visit}) do
     %{
       id: visit.id,

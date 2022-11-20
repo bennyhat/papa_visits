@@ -27,6 +27,8 @@ defmodule PapaVisitsWeb.Router do
     pipe_through [:api, :api_protected]
 
     get "/user", UserController, :show
+
     get "/visit", VisitController, :index
+    post "/visit", VisitController, :create
   end
 end
