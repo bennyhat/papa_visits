@@ -83,8 +83,8 @@ defmodule PapaVisitsTest do
 
   describe "complete_visit/1" do
     setup do
-      %{id: member_id} = papa = Factory.insert(:user, minutes: 100)
-      params = Factory.build(:visit_params, user_id: member_id, minutes: 100)
+      %{id: papa_id} = papa = Factory.insert(:user, minutes: 100)
+      params = Factory.build(:visit_params, user_id: papa_id, minutes: 100)
 
       pal = Factory.insert(:user, minutes: 100)
 
@@ -112,6 +112,62 @@ defmodule PapaVisitsTest do
       assert {:ok,
               %Transaction{
                 papa: %{minutes: ^expected_papa_minutes},
+                pal: %{minutes: ^expected_pal_minutes},
+                visit: %{status: :completed}
+              }} = PapaVisits.complete_visit(params)
+    end
+
+    test "given non-integer overhead removal it rounds (down)", %{
+      pal: pal
+    } do
+      minutes_that_will_round_down = 33
+      papa = Factory.insert(:user, minutes: 100)
+
+      request_params =
+        Factory.build(:visit_params, user_id: papa.id, minutes: minutes_that_will_round_down)
+
+      {:ok, visit} = PapaVisits.request_visit(request_params)
+
+      params =
+        Factory.build(
+          :transaction_params,
+          papa_id: papa.id,
+          pal_id: pal.id,
+          visit_id: visit.id
+        )
+
+      expected_pal_minutes = round(pal.minutes + visit.minutes * 0.85)
+
+      assert {:ok,
+              %Transaction{
+                pal: %{minutes: ^expected_pal_minutes},
+                visit: %{status: :completed}
+              }} = PapaVisits.complete_visit(params)
+    end
+
+    test "given non-integer overhead removal it rounds (up)", %{
+      pal: pal
+    } do
+      minutes_that_will_round_up = 35
+      papa = Factory.insert(:user, minutes: 100)
+
+      request_params =
+        Factory.build(:visit_params, user_id: papa.id, minutes: minutes_that_will_round_up)
+
+      {:ok, visit} = PapaVisits.request_visit(request_params)
+
+      params =
+        Factory.build(
+          :transaction_params,
+          papa_id: papa.id,
+          pal_id: pal.id,
+          visit_id: visit.id
+        )
+
+      expected_pal_minutes = round(pal.minutes + visit.minutes * 0.85)
+
+      assert {:ok,
+              %Transaction{
                 pal: %{minutes: ^expected_pal_minutes},
                 visit: %{status: :completed}
               }} = PapaVisits.complete_visit(params)
