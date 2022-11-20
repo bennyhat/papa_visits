@@ -1,4 +1,4 @@
-defmodule PapaVisits.Repo.Migrations.DeleteTransactionsPapaId do
+defmodule PapaVisits.Repo.Migrations.RemoveTransactionsPapaId do
   use Ecto.Migration
 
   def change do

@@ -187,9 +187,9 @@ defmodule PapaVisits.Visits do
     visit_id = transaction.visit_id
 
     from u in User,
-      where: u.id == ^pal_id,
       join: v in Visit,
       on: v.id == ^visit_id,
+      where: u.id == ^pal_id,
       update: [set: [minutes: fragment("round(?)", u.minutes + v.minutes * 0.85)]]
   end
 

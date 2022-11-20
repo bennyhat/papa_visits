@@ -1,4 +1,4 @@
-defmodule PapaVisitsWeb.Api.SessionController do
+defmodule PapaVisitsWeb.Api.Auth.SessionController do
   use PapaVisitsWeb, :controller
 
   alias Plug.Conn

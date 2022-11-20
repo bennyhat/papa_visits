@@ -1,4 +1,4 @@
-defmodule PapaVisitsWeb.Api.RegistrationController do
+defmodule PapaVisitsWeb.Api.Auth.RegistrationController do
   @moduledoc """
   A controller for registering new users for the sake of
   assigning a new id and access token

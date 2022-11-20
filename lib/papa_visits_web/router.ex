@@ -9,10 +9,14 @@ defmodule PapaVisitsWeb.Router do
       token_namespace: "papa_visits_api"
   end
 
-  scope "/api", PapaVisitsWeb.Api do
+  scope "/api", PapaVisitsWeb.Api, as: :api do
     pipe_through :api
 
-    post "/registration", RegistrationController, :create
-    post "/session", SessionController, :create
+    scope "/auth", Auth, as: :auth do
+      post "/registration", RegistrationController, :create
+      post "/session", SessionController, :create
+    end
+
+    get "/visit", VisitController, :index
   end
 end

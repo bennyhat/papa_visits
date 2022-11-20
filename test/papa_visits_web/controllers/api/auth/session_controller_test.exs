@@ -1,10 +1,10 @@
-defmodule PapaVisitsWeb.Api.SessionControllerTest do
+defmodule PapaVisitsWeb.Api.Auth.SessionControllerTest do
   use PapaVisitsWeb.ConnCase
 
   describe "POST /session => create/2" do
     setup %{conn: conn} do
       params = Factory.string_params_for(:user_creation, minutes: nil)
-      path = Routes.registration_path(conn, :create)
+      path = Routes.api_auth_registration_path(conn, :create)
 
       conn
       |> post(path, params)
@@ -16,7 +16,7 @@ defmodule PapaVisitsWeb.Api.SessionControllerTest do
     end
 
     test "given a user with all required fields, creates it", %{conn: conn, login: params} do
-      path = Routes.session_path(conn, :create)
+      path = Routes.api_auth_session_path(conn, :create)
 
       assert %{
                "data" => %{
@@ -29,7 +29,7 @@ defmodule PapaVisitsWeb.Api.SessionControllerTest do
     end
 
     test "given a user with missing fields, sends error", %{conn: conn} do
-      path = Routes.session_path(conn, :create)
+      path = Routes.api_auth_session_path(conn, :create)
 
       assert %{
                "error" => %{
@@ -43,7 +43,7 @@ defmodule PapaVisitsWeb.Api.SessionControllerTest do
     end
 
     test "given a user invalid password, sends error", %{conn: conn, login: params} do
-      path = Routes.session_path(conn, :create)
+      path = Routes.api_auth_session_path(conn, :create)
       params = Map.put(params, "password", "wrong")
 
       assert %{

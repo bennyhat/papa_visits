@@ -1,11 +1,11 @@
-defmodule PapaVisitsWeb.Api.RegistrationControllerTest do
+defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
   use PapaVisitsWeb.ConnCase
 
   describe "POST /registration => create/2" do
     test "given a user with all required fields, creates it", %{conn: conn} do
       params = Factory.string_params_for(:user_creation, minutes: nil)
 
-      path = Routes.registration_path(conn, :create)
+      path = Routes.api_auth_registration_path(conn, :create)
 
       assert %{
                "data" => %{
@@ -28,7 +28,7 @@ defmodule PapaVisitsWeb.Api.RegistrationControllerTest do
           email: nil
         )
 
-      path = Routes.registration_path(conn, :create)
+      path = Routes.api_auth_registration_path(conn, :create)
 
       assert %{
                "error" => %{
@@ -56,7 +56,7 @@ defmodule PapaVisitsWeb.Api.RegistrationControllerTest do
           email: "not-an-email"
         )
 
-      path = Routes.registration_path(conn, :create)
+      path = Routes.api_auth_registration_path(conn, :create)
 
       assert %{
                "error" => %{
@@ -83,7 +83,7 @@ defmodule PapaVisitsWeb.Api.RegistrationControllerTest do
           email: existing_email
         )
 
-      path = Routes.registration_path(conn, :create)
+      path = Routes.api_auth_registration_path(conn, :create)
 
       assert %{
                "error" => %{
