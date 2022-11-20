@@ -15,8 +15,7 @@ defmodule PapaVisits.Visits.Task do
     field :description, :string
   end
 
-  @spec changeset(t(), map() | TaskParams.t()) ::
-          {:ok, Ecto.Changeset.t()} | {:error, Ecto.Changeset.t()}
+  @spec changeset(t(), map() | TaskParams.t()) :: Ecto.Changeset.t()
   def changeset(schema \\ %__MODULE__{}, params)
 
   def changeset(schema, %TaskParams{} = params) do

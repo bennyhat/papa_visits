@@ -29,8 +29,7 @@ defmodule PapaVisits.Visits.Visit do
     |> changeset(params)
   end
 
-  @spec changeset(t(), map() | VisitParams.t()) ::
-          {:ok, Ecto.Changeset.t()} | {:error, Ecto.Changeset.t()}
+  @spec changeset(t(), map() | VisitParams.t()) :: Ecto.Changeset.t()
   def changeset(schema, params)
 
   def changeset(schema, %VisitParams{} = params) do
@@ -39,12 +38,19 @@ defmodule PapaVisits.Visits.Visit do
 
   def changeset(schema, params) do
     schema
-    |> cast(params, [:date, :minutes, :status])
-    |> validate_required([:date, :minutes, :status, :user_id])
+    |> cast(params, [:date, :minutes])
+    |> validate_required([:date, :minutes, :user_id])
     |> cast_assoc(:tasks, required: true)
     |> foreign_key_constraint(:user_id, message: "user does not exist")
     |> validate_number(:minutes, greater_than: 0)
     |> validate_date_is_at_least_today()
+  end
+
+  @spec status_changeset(t(), atom()) :: Ecto.Changeset.t()
+  def status_changeset(schema, status) do
+    schema
+    |> cast(%{status: status}, [:status])
+    |> validate_required([:status])
   end
 
   defp validate_date_is_at_least_today(changeset) do

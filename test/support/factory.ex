@@ -39,4 +39,12 @@ defmodule PapaVisits.Factory do
       description: Faker.Lorem.sentence()
     }
   end
+
+  def transaction_params_factory do
+    %PapaVisits.Params.Transaction{
+      papa_id: Faker.UUID.v4(),
+      pal_id: Faker.UUID.v4(),
+      visit_id: Faker.UUID.v4()
+    }
+  end
 end
