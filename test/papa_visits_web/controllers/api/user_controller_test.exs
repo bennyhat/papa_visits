@@ -16,6 +16,14 @@ defmodule PapaVisitsWeb.Api.UserControllerTest do
 
     conn_with_auth = put_req_header(conn, "authorization", token)
 
+    visit_params = Factory.string_params_for(:visit_params, minutes: 1, user_id: nil)
+    visit_path = Routes.api_visit_path(conn, :create)
+
+    assert %{"data" => _visit} =
+             conn_with_auth
+             |> post(visit_path, visit_params)
+             |> json_response(200)
+
     [conn: conn_with_auth, xconn: conn, user_params: params]
   end
 
@@ -38,7 +46,8 @@ defmodule PapaVisitsWeb.Api.UserControllerTest do
                "id" => _,
                "first_name" => ^expected_first_name,
                "last_name" => ^expected_last_name,
-               "email" => ^expected_email
+               "email" => ^expected_email,
+               "visits" => [_ | _]
              } = user
 
       refute Map.has_key?(user, "password")

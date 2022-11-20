@@ -202,5 +202,5 @@ defmodule PapaVisits.Visits do
   defp check_transaction(_repo, %{give_to_pal: {0, _}}), do: {:error, :pal_not_found}
 
   defp check_transaction(repo, %{transaction: transaction}),
-    do: {:ok, repo.preload(transaction, [:pal, visit: [:user]])}
+    do: {:ok, repo.preload(transaction, [:pal, visit: [:user, :tasks]])}
 end

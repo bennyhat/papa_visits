@@ -11,7 +11,7 @@ defmodule PapaVisits.Users do
 
   @spec get(get_params()) :: get_returns()
   def get(id) do
-    Repo.preload(get_basic(id), [:visits])
+    Repo.preload(get_basic(id), visits: [:tasks])
   end
 
   @type get_basic_params :: Ecto.UUID.t()

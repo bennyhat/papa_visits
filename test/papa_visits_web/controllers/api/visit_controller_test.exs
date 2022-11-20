@@ -2,7 +2,7 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
   use PapaVisitsWeb.ConnCase
   import Assertions
 
-  setup %{conn: conn} do
+  def user_and_conn(%{conn: conn}) do
     params = Factory.string_params_for(:user_creation, minutes: nil)
     path = Routes.api_auth_registration_path(conn, :create)
 
@@ -24,7 +24,69 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
       |> get(user_path)
       |> json_response(200)
 
-    [conn: conn_with_auth, xconn: conn, user: user]
+    %{conn: conn_with_auth, xconn: conn, user: user}
+  end
+
+  setup :user_and_conn
+
+  describe "PUT /visit/:id/complete => update_completed/2" do
+    setup %{conn: papa_conn, user: papa_user} do
+      %{user: pal_user} = user_and_conn(%{conn: papa_conn})
+
+      params =
+        Factory.string_params_for(:visit_params, minutes: papa_user["minutes"], user_id: nil)
+
+      path = Routes.api_visit_path(papa_conn, :create)
+
+      assert %{"data" => visit} =
+               papa_conn
+               |> post(path, params)
+               |> json_response(200)
+
+      %{pal_user: pal_user, visit: visit}
+    end
+
+    test "given a valid request it completes the visit", %{
+      conn: conn,
+      user: papa_user,
+      pal_user: pal_user,
+      visit: visit
+    } do
+      params =
+        Factory.string_params_for(
+          :transaction_params,
+          visit_id: visit["id"],
+          pal_id: pal_user["id"]
+        )
+
+      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+
+      expected_visit_id = visit["id"]
+      expected_pal_id = pal_user["id"]
+      expected_papa_id = papa_user["id"]
+      expected_pal_minutes = round(pal_user["minutes"] + visit["minutes"] * 0.85)
+      expected_papa_minutes = papa_user["minutes"] - visit["minutes"]
+
+      assert %{
+               "data" => %{
+                 "id" => _,
+                 "pal" => %{
+                   "id" => ^expected_pal_id,
+                   "minutes" => ^expected_pal_minutes
+                 },
+                 "visit" => %{
+                   "id" => ^expected_visit_id,
+                   "user" => %{
+                     "id" => ^expected_papa_id,
+                     "minutes" => ^expected_papa_minutes
+                   }
+                 }
+               }
+             } =
+               conn
+               |> put(path, params)
+               |> json_response(200)
+    end
   end
 
   describe "POST /visit => create/2" do

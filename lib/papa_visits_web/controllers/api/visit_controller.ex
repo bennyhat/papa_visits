@@ -4,6 +4,7 @@ defmodule PapaVisitsWeb.Api.VisitController do
   action_fallback PapaVisitsWeb.Api.FallbackController
 
   alias PapaVisits
+  alias PapaVisits.Params.Transaction
   alias PapaVisits.Params.Visit
   alias PapaVisits.Params.VisitFilter
   alias Plug.Conn
@@ -22,6 +23,14 @@ defmodule PapaVisitsWeb.Api.VisitController do
     with {:ok, visit_params} <- Visit.from(params_with_user),
          {:ok, visit} <- PapaVisits.request_visit(visit_params) do
       render(conn, "show.json", visit: visit)
+    end
+  end
+
+  @spec update_completed(Conn.t(), map()) :: Conn.t()
+  def update_completed(conn, params) do
+    with {:ok, transaction_params} <- Transaction.from(params),
+         {:ok, transaction} <- PapaVisits.complete_visit(transaction_params) do
+      render(conn, "update_completed.json", transaction: transaction)
     end
   end
 end
