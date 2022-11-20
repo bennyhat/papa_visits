@@ -87,6 +87,54 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                |> put(path, params)
                |> json_response(200)
     end
+
+    test "given syntactically invalid data it indicates that", %{conn: conn} do
+      params =
+        Factory.string_params_for(
+          :transaction_params,
+          visit_id: "not-a-uuid",
+          pal_id: nil
+        )
+
+      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+
+      assert %{
+               "error" => %{
+                 "status" => 422,
+                 "message" => "Parameter validation failed.",
+                 "errors" => %{
+                   "visit_id" => ["is invalid"],
+                   "pal_id" => ["can't be blank"]
+                 }
+               }
+             } =
+               conn
+               |> put(path, params)
+               |> json_response(422)
+    end
+
+    test "given semantically invalid data it indicates that", %{conn: conn} do
+      params =
+        Factory.string_params_for(
+          :transaction_params,
+          visit_id: Faker.UUID.v4()
+        )
+
+      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+
+      assert %{
+               "error" => %{
+                 "status" => 422,
+                 "message" => "Validation failed.",
+                 "errors" => %{
+                   "visit_id" => ["visit not found"]
+                 }
+               }
+             } =
+               conn
+               |> put(path, params)
+               |> json_response(422)
+    end
   end
 
   describe "POST /visit => create/2" do
