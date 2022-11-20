@@ -65,19 +65,39 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
       assert Enum.sort(expected_task_ids) == Enum.sort(actual_task_ids)
     end
 
-    # test "given a user invalid password, sends error", %{conn: conn, login: params} do
-    #   path = Routes.session_path(conn, :create)
-    #   params = Map.put(params, "password", "wrong")
+    test "properly passes along filter params", %{conn: conn, users: users} do
+      %{id: user_id, visits: visits} =
+        users
+        |> Enum.random()
+        |> PapaVisits.Repo.preload([:visits])
 
-    #   assert %{
-    #            "error" => %{
-    #              "message" => "Invalid email or password",
-    #              "status" => 401
-    #            }
-    #          } =
-    #            conn
-    #            |> post(path, params)
-    #            |> json_response(401)
-    # end
+      %{status: status} = Enum.random(visits)
+
+      path = Routes.api_visit_path(conn, :index, user_id: user_id, status: status)
+
+      assert %{
+               "data" => [actual_visit]
+             } =
+               conn
+               |> get(path)
+               |> json_response(200)
+
+      assert user_id == get_in(actual_visit, ["user", "id"])
+      assert to_string(status) == actual_visit["status"]
+    end
+
+    test "unauthenticated users are not authorized", %{xconn: conn} do
+      path = Routes.api_visit_path(conn, :index)
+
+      assert %{
+               "error" => %{
+                 "status" => 401,
+                 "message" => "Not authenticated"
+               }
+             } =
+               conn
+               |> get(path)
+               |> json_response(401)
+    end
   end
 end

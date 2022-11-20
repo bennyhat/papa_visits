@@ -1,4 +1,4 @@
-defmodule PapaVisitsWeb.ApiAuthPlug do
+defmodule PapaVisitsWeb.Api.AuthPlug do
   @moduledoc """
   This module gets hooked into Pow's main user management system
   such that it can:

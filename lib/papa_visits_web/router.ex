@@ -4,9 +4,14 @@ defmodule PapaVisitsWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
 
-    plug PapaVisitsWeb.ApiAuthPlug,
+    plug PapaVisitsWeb.Api.AuthPlug,
       otp_app: :papa_visits,
       token_namespace: "papa_visits_api"
+  end
+
+  pipeline :api_protected do
+    plug Pow.Plug.RequireAuthenticated,
+      error_handler: PapaVisitsWeb.Api.Auth.ErrorPlug
   end
 
   scope "/api", PapaVisitsWeb.Api, as: :api do
@@ -16,6 +21,10 @@ defmodule PapaVisitsWeb.Router do
       post "/registration", RegistrationController, :create
       post "/session", SessionController, :create
     end
+  end
+
+  scope "/api", PapaVisitsWeb.Api, as: :api do
+    pipe_through [:api, :api_protected]
 
     get "/visit", VisitController, :index
   end
