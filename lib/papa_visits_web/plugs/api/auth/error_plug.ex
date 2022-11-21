@@ -1,4 +1,7 @@
 defmodule PapaVisitsWeb.Api.Auth.ErrorPlug do
+  @moduledoc """
+  A plug for handling unauthenticated users.
+  """
   use PapaVisitsWeb, :controller
   alias Plug.Conn
 

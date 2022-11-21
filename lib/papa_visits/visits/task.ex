@@ -1,4 +1,7 @@
 defmodule PapaVisits.Visits.Task do
+  @moduledoc """
+  How a visit task is representated in the database.
+  """
   use Ecto.Schema
 
   import Ecto.Changeset

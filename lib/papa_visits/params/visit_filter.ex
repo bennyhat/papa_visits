@@ -1,4 +1,7 @@
 defmodule PapaVisits.Params.VisitFilter do
+  @moduledoc """
+  Parameters for filtering a list of visits.
+  """
   use CozyParams.Schema
 
   schema do

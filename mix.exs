@@ -56,6 +56,7 @@ defmodule PapaVisits.MixProject do
     [
       {:assertions, "~> 0.19.0", only: :test},
       {:cozy_params, "~> 1.0"},
+      {:credo, "~> 1.6", only: :dev},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
       {:ex_machina, "~> 2.7", only: :test},

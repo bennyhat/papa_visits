@@ -1,4 +1,8 @@
 defmodule PapaVisits.Params.Transaction do
+  @moduledoc """
+  Parameters for completing a visit.
+  """
+
   use CozyParams.Schema
 
   schema do

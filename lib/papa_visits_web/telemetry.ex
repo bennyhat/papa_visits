@@ -1,4 +1,7 @@
 defmodule PapaVisitsWeb.Telemetry do
+  @moduledoc """
+  Telemetry aggregation for the dashboard, which I've removed.
+  """
   use Supervisor
   import Telemetry.Metrics
 

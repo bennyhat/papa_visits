@@ -1,4 +1,9 @@
 defmodule PapaVisits.Visits.Visit do
+  @moduledoc """
+  How a visit is representated in the database.
+  Only minor validation is done here, as I try to avoid
+  Doing Repo calls at this level.
+  """
   use Ecto.Schema
 
   import Ecto.Changeset

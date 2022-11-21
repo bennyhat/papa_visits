@@ -1,4 +1,7 @@
 defmodule PapaVisits.Params.Visit do
+  @moduledoc """
+  Parameters for requesting a visit.
+  """
   use CozyParams.Schema
 
   schema do

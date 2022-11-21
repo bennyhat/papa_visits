@@ -181,6 +181,13 @@ test.integration: start start.secondary
 	@echo Running integration tests
 	mix test.integration
 
+.PHONY: check
+check:
+	@echo Running checks
+	@mix format --check-formatted
+	@mix credo
+# TODO dialyzer
+
 .PHONY: migrations.%
 migrations.%: export MIX_ENV = $*
 migrations.%: deps

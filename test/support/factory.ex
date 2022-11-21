@@ -1,4 +1,7 @@
 defmodule PapaVisits.Factory do
+  @moduledoc """
+  Factories for parameters and database models
+  """
   use ExMachina.Ecto, repo: PapaVisits.Repo
 
   def user_factory do

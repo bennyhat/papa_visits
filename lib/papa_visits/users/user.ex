@@ -1,4 +1,8 @@
 defmodule PapaVisits.Users.User do
+  @moduledoc """
+  How a user is represented in the database.
+  Very tightly coupled in with Pow, the auth library.
+  """
   use Ecto.Schema
   use Pow.Ecto.Schema
 

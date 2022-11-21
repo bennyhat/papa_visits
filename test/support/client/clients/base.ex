@@ -1,4 +1,8 @@
 defmodule PapaVisits.Test.Support.Clients.Base do
+  @moduledoc """
+  Base client implementation for integration tests.
+  Using compilation pattern rather than making tests pass client around.
+  """
   defmacro __using__(opts) do
     quote do
       use Tesla
