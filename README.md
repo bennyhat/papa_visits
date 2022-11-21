@@ -90,7 +90,6 @@ Here is a break down of some design decisions for various parts of the system:
     - Drove the orchestration of that, tools bootstrapping and the app compile => release => start with `make`.
     - The main goal of the tooling was that a user who has `asdf` and `make` (and DevTools on Mac) could just run `make test` or `make start` and just have it work.
     - I'm not very pleased with how complex the `Makefile` ended up being. I think docker-compose + some elixir based tasks, such as `Divo` would have been a better choice overall from a "not everyone knows `make`" standpoint.
-  - Notes
 
 ## Assumptions
 A lot of the assumptions I had were covered in the "Design" section, but here are some as they pertain to how someone would actually use the service.
@@ -117,3 +116,180 @@ A lot of the assumptions I had were covered in the "Design" section, but here ar
       - Description - a user tries to request a new visit after a pal leaves, right at the same time the pal tries to mark the visit they're leaving as complete. If the process to mark a visit complete => give minutes to pal => take minutes from papa, were not done in a transaction, the "do you have enough minutes" check done in the visit request could pick up the dirty writes (depending on the write order) and allow a visit to be requested right as the other one is marked complete.
       - Notes
         - A single SELECT on the request side and a transaction on the complete side is sufficient to prevent this due to postgres' default READ COMMIT isolation, BUT the `FOR UPDATE` requirements on the user request make that very difficult to do.
+
+## Running the service
+### Getting the most basic tools installed
+If you're on Mac:
+- Developers tools, which includes `make`, `awk`, and other compiler related tools for installing erlang. If you don't have it, you can from the terminal with `xcode-select --install`
+
+If you're on Linux (have not tested this):
+- You'll need at least GNU `make` and `awk` and then the second steps from the
+
+If you're on Windows (have not tested this and good luck...):
+- You'll need, at a minimum the Linux Subsystem for Windows or several of the GNU for Windows utils
+
+Then you can install:
+- ASDF, which will be used to install erlang, elixir and some other helpful local dev tools. Instructions are at https://asdf-vm.com/guide/getting-started.html#_3-install-asdf
+- If you don't want to use the `make` command provided, and instead want to use `mix`, `pg_ctl`, etc. directly at a minimum you will need to have `direnv` installed (you can do so in this project directory as `asdf install direnv`) and hooked into you `~/.zshrc` or `~/.bashrc`. If you use the `make` command, however, it auto loads the environment variable in `.envrc`
+
+### Getting the next level of tools installed
+If you're inclined to use the `make` command you can just run the following to bootstrap in all of the tools required to run the service.
+
+``` shell
+make bootstrap
+```
+
+The bootstrap step will also automatically kick off it finds that you don't have the `asdf` tools installed. So, for example, if you wanted to run the unit tests, you could do the following and it would bootstrap things in.
+
+``` shell
+make test
+```
+
+If `make` isn't working for you, you can instead do the following:
+
+``` shell
+asdf install
+```
+
+### Running the tests
+Once you're bootstrapped in with all the tools, you can run the unit tests with
+
+``` shell
+make test
+```
+
+If `make` isn't working for you, you can instead do the following, answering yes to any interactive prompts.
+
+``` shell
+direnv allow
+mix deps.get
+pg_ctl start
+mix test
+```
+
+### Running the integration tests
+These tests run against the actual started application, and confirm some basic concurrency scenarios that aren't easy to do when using a single node and `Ecto`'s sandbox adapter.
+
+You can run them with the following, which will cut a release , migrate the prod database and re/start the application and a secondary application.
+
+``` shell
+make test.integration
+```
+
+If `make` isn't working for you, you can instead do the following to start up the app and its secondary (assuming you've run the unit tests and its required DB and `deps.get`).
+
+``` shell
+direnv allow
+MIX_ENV=prod mix do ecto.create + ecto.migrate
+MIX_ENV=prod mix release --overwrite papa_visits_a
+MIX_ENV=prod mix release --overwrite papa_visits_b
+_build/prod/rel/papa_visits_a/bin/papa_visits_a start
+PORT=${PORT_SECONDARY} _build/prod/rel/papa_visits_b/bin/papa_visits_b start
+
+mix test.integration
+```
+
+### Running the application release
+This can be done via the following command, which will start the primary and secondary copies of the application and have them listen on ports `14001` and `14002`, respectively.
+
+``` shell
+make start start.secondary
+```
+
+If you're having trouble with `make`, you can do this instead and just run the primary app.
+
+``` shell
+MIX_ENV=prod mix do ecto.create + ecto.migrate
+MIX_ENV=prod mix release --overwrite papa_visits_a
+_build/prod/rel/papa_visits_a/bin/papa_visits_a start
+```
+
+### Running the dev version of the application
+This can be done via the following command to run the dev copy of the app and attach to it with iex. This will run the application on port `14001`, so make sure you've stopped any other copies of the app you may have started in the background, first.
+
+``` shell
+make run.interactive
+```
+
+If you're having trouble with `make`, you can do this instead
+
+``` shell
+mix do ecto.create + ecto.migrate
+iex -S mix phx.server
+```
+
+### Other tooling in the Makefile
+There are some nice to haves in the Makefile for things like
+- attaching to the database, per env - `make run.db.prod`, etc.
+- running the application in dev mode - `make run` and `make run.interactive`
+- starting the prod release application in interctive mode - `make start.interactive`
+- stopping any background runs of the app and cleaning out the database - `make clean`
+- remote into the background run of the primary app - `make remote`
+- run format, credo, etc. checks - `make check`
+- run migrations for each env - `make migrations.dev`, etc.
+- stop the primary and secondary background runs of the app and the database - `make stop`
+- stop just the database - `make stop.db`
+- stop just either app- `make stop.app.a`, etc.
+
+### Using the Application
+Since this is simple API, with no GUI, you'll either need Postman, or a few command line tools to use it.
+
+This section will use the following tools to demonstrate use:
+- `jq` - installed as a tool already via `asdf`
+- `curl` - installed on Mac by default
+
+#### Create a user
+This will create a user and get back a token, which we'll use in subsequent requests
+``` shell
+token=$(
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"email": "ben@example.com", "password":"longpassword", "first_name": "Ben", "last_name": "Brewer"}' \
+  http://localhost:14001/api/auth/registration \
+  | jq -r '.data.access_token'
+)
+```
+
+### Request a visit
+The created user will only have 120 minutes to spend, so keep that in mind. Using the `token` variable from the last step, I can now request a visit with the following. Note that the `Bearer` specification is no used on the header, which I noticed long after adding `Pow` token support.
+
+``` shell
+visit_id=$(
+curl --header "Content-Type: application/json" \
+  --header "Authorization: ${token}" \
+  --request POST \
+  --data '{"date": "2024-10-10", "minutes":10, "tasks": [{"name": "help me"}]}' \
+  http://localhost:14001/api/visit \
+  | jq -r '.data.id'
+)
+```
+
+### Find and complete a visit
+Now to act as a pal, we'll need to be a different user, find the visit and complete it. The final command will print the json response showing the resulting minutes for the papa and pal.
+
+``` shell
+# create a pal user and get the token for them
+pal_token=$(
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"email": "pal@example.com", "password":"longpassword", "first_name": "Pal", "last_name": "Amino"}' \
+  http://localhost:14001/api/auth/registration \
+  | jq -r '.data.access_token'
+)
+
+# look at available visits and pick the first one
+pal_visit_id=$(
+curl --header "Content-Type: application/json" \
+  --header "Authorization: ${pal_token}" \
+  --request GET \
+  http://localhost:14001/api/visit \
+  | jq -r '.data[0].id'
+)
+
+# complete the visit
+curl --header "Content-Type: application/json" \
+  --header "Authorization: ${pal_token}" \
+  --request PUT \
+  "http://localhost:14001/api/visit/${pal_visit_id}/complete" \
+  | jq -r '.'
+```
