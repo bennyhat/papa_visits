@@ -19,6 +19,7 @@ defmodule PapaVisitsWeb.Router do
 
     scope "/auth", Auth, as: :auth do
       post "/registration", RegistrationController, :create
+      delete "/registration", RegistrationController, :delete
       post "/session", SessionController, :create
     end
   end

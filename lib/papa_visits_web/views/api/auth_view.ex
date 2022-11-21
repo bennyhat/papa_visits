@@ -12,4 +12,12 @@ defmodule PapaVisitsWeb.Api.AuthView do
       }
     }
   end
+
+  # presumably this could return some details of the delete in
+  # the future too, like visits, transactions, etc. deleted
+  def render("delete.json", _assigns) do
+    %{
+      data: "success"
+    }
+  end
 end

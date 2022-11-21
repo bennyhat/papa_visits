@@ -1,7 +1,7 @@
 defmodule PapaVisitsWeb.Api.Auth.SessionControllerTest do
   use PapaVisitsWeb.ConnCase
 
-  describe "POST /session => create/2" do
+  describe "POST /auth/session => create/2" do
     setup %{conn: conn} do
       params = Factory.string_params_for(:user_creation)
       path = Routes.api_auth_registration_path(conn, :create)

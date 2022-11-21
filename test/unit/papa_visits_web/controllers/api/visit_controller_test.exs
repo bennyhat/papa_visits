@@ -29,6 +29,8 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
 
   setup :user_and_conn
 
+  # TODO - drive in that token must match pal_id
+  # TODO - actually just drive in having the pal_id be from the header
   describe "PUT /visit/:id/complete => update_completed/2" do
     setup %{conn: papa_conn, user: papa_user} do
       %{user: pal_user} = user_and_conn(%{conn: papa_conn})

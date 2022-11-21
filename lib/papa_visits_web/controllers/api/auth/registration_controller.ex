@@ -17,4 +17,13 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationController do
       |> render("access_token.json", token: conn.private.access_token)
     end
   end
+
+  @spec delete(Conn.t(), map()) :: Conn.t()
+  def delete(conn, _params) do
+    with {:ok, _user, conn} <- Pow.Plug.delete_user(conn) do
+      conn
+      |> put_view(PapaVisitsWeb.Api.AuthView)
+      |> render("delete.json")
+    end
+  end
 end
