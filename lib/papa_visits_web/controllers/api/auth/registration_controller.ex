@@ -9,7 +9,7 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationController do
 
   alias Plug.Conn
 
-  @spec create(Conn.t(), map()) :: Conn.t()
+  @spec create(Conn.t(), map()) :: Conn.t() | {:error, any()}
   def create(conn, user_params) do
     with {:ok, _user, conn} <- Pow.Plug.create_user(conn, user_params) do
       conn
@@ -18,7 +18,7 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationController do
     end
   end
 
-  @spec delete(Conn.t(), map()) :: Conn.t()
+  @spec delete(Conn.t(), map()) :: Conn.t() | {:error, any()}
   def delete(conn, _params) do
     with {:ok, _user, conn} <- Pow.Plug.delete_user(conn) do
       conn

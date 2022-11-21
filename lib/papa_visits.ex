@@ -6,7 +6,7 @@ defmodule PapaVisits do
   alias PapaVisits.Users
   alias PapaVisits.Visits
 
-  @spec request_visit(Visits.request_params()) :: Visits.request_returns()
+  @spec request_visit(Visits.create_params()) :: Visits.create_returns()
   def request_visit(params) do
     Visits.create(params)
   end

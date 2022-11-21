@@ -60,6 +60,7 @@ defmodule PapaVisits.MixProject do
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
       {:ex_machina, "~> 2.7", only: :test},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:faker, "~> 0.17.0", only: :test},
       {:finch, "~> 0.3", only: :test},
       {:floki, ">= 0.30.0", only: :test},

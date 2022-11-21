@@ -60,7 +60,7 @@ defmodule PapaVisits.Factory do
   end
 
   def visit_task_params_factory do
-    %PapaVisits.Params.Visit.Tasks{
+    %PapaVisits.Params.Task{
       name: Faker.Lorem.word(),
       description: Faker.Lorem.sentence()
     }

@@ -9,14 +9,14 @@ defmodule PapaVisitsWeb.Api.VisitController do
   alias PapaVisits.Params.VisitFilter
   alias Plug.Conn
 
-  @spec index(Conn.t(), map()) :: Conn.t()
+  @spec index(Conn.t(), map()) :: Conn.t() | {:error, any()}
   def index(conn, params) do
     with {:ok, filters} <- VisitFilter.from(params) do
       render(conn, "index.json", visits: PapaVisits.list_visits(filters))
     end
   end
 
-  @spec create(Conn.t(), map()) :: Conn.t()
+  @spec create(Conn.t(), map()) :: Conn.t() | {:error, any()}
   def create(conn, params) do
     params_with_user = Map.put(params, "user_id", conn.assigns.current_user.id)
 
@@ -26,7 +26,7 @@ defmodule PapaVisitsWeb.Api.VisitController do
     end
   end
 
-  @spec update_completed(Conn.t(), map()) :: Conn.t()
+  @spec update_completed(Conn.t(), map()) :: Conn.t() | {:error, any()}
   def update_completed(conn, params) do
     params_with_pal = Map.put(params, "pal_id", conn.assigns.current_user.id)
 

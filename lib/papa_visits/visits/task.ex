@@ -6,7 +6,7 @@ defmodule PapaVisits.Visits.Task do
 
   import Ecto.Changeset
 
-  alias PapaVisits.Params.Visit.Tasks, as: TaskParams
+  alias PapaVisits.Params.Task, as: TaskParams
   alias PapaVisits.Visits.Visit
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -32,7 +32,14 @@ defmodule PapaVisits.Visits.Task do
   end
 
   @type t :: %__MODULE__{
-          visit: Visit.t(),
+          visit_id: Ecto.UUID.t() | nil,
+          name: String.t() | nil,
+          description: String.t() | nil
+        }
+
+  @type t_loaded :: %__MODULE__{
+          id: Ecto.UUID.t(),
+          visit_id: Ecto.UUID.t(),
           name: String.t(),
           description: String.t()
         }

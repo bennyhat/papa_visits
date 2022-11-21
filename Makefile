@@ -186,7 +186,7 @@ check:
 	@echo Running checks
 	@mix format --check-formatted
 	@mix credo
-# TODO dialyzer
+	@mix dialyzer
 
 .PHONY: migrations.%
 migrations.%: export MIX_ENV = $*

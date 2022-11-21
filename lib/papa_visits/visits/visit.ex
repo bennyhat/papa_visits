@@ -35,8 +35,7 @@ defmodule PapaVisits.Visits.Visit do
     change(schema, %{})
   end
 
-  @spec changeset(map() | VisitParams.t()) ::
-          {:ok, Ecto.Changeset.t()} | {:error, Ecto.Changeset.t()}
+  @spec changeset(map() | VisitParams.t()) :: Ecto.Changeset.t()
   def changeset(params) do
     %User{id: params.user_id}
     |> Ecto.build_assoc(:visits)
@@ -85,20 +84,17 @@ defmodule PapaVisits.Visits.Visit do
 
   @type t :: %__MODULE__{
           date: Date.t(),
-          minutes: integer(),
+          minutes: integer() | nil,
           tasks: [Task.t()],
-          status: atom(),
-          updated_at: DateTime.t(),
-          inserted_at: DateTime.t()
+          status: atom() | nil
         }
 
   @type t_preloaded :: %__MODULE__{
+          id: Ecto.UUID.t(),
           user: User.t(),
           date: Date.t(),
           minutes: integer(),
-          tasks: [Task.t()],
-          status: atom(),
-          updated_at: DateTime.t(),
-          inserted_at: DateTime.t()
+          tasks: [Task.t_loaded()],
+          status: atom()
         }
 end

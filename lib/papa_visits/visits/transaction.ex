@@ -56,14 +56,13 @@ defmodule PapaVisits.Visits.Transaction do
   end
 
   @type t :: %__MODULE__{
-          updated_at: DateTime.t(),
-          inserted_at: DateTime.t()
+          visit_id: Ecto.UUID.t(),
+          pal_id: Ecto.UUID.t()
         }
 
   @type t_preloaded :: %__MODULE__{
+          id: Ecto.UUID.t(),
           pal: User.t(),
-          visit: Visit.t_preloaded(),
-          updated_at: DateTime.t(),
-          inserted_at: DateTime.t()
+          visit: Visit.t_preloaded()
         }
 end

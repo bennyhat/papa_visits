@@ -7,9 +7,10 @@ defmodule PapaVisitsWeb.Api.AuthPlug do
   """
   use Pow.Plug.Base
 
-  alias Plug.Conn
   alias PapaVisits.Users
   alias PapaVisits.Users.User
+  alias Plug.Conn
+  alias Pow.Config
 
   @doc """
   Fetches the user from access token.
