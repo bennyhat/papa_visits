@@ -109,6 +109,19 @@ Here is a break down of some design decisions for various parts of the system:
     - Drove the orchestration of that, tools bootstrapping and the app compile => release => start with `make`.
     - The main goal of the tooling was that a user who has `asdf` and `make` (and DevTools on Mac) could just run `make test` or `make start` and just have it work.
     - I'm not very pleased with how complex the `Makefile` ended up being. I think docker-compose + some elixir based tasks, such as `Divo` would have been a better choice overall from a "not everyone knows `make`" standpoint.
+  - Database
+    - The models for this were kept pretty similar with the models provided in the service specification.
+    - I did just make it so the `user` for a transaction is recorded through the `transaction`'s visit for the sake of simplicity.
+    - Otherwise, I put minutes for each user in the same model as their auth details.
+      - In an OAuth2 based system this likely wouldn't be an issue, since that table wouldn't really hold any auth details other than their subject id from the auth system.
+      - For something like this, where the user holds real password info, etc. ideally the minutes and other business logic related stuff would have been put into another model called `Account` or `Member` for good separation and to also prep for a possible future split-off of the auth system.
+      - All in all though, I just kept the model as one `User` for the sake of simplicity.
+  - Testing
+    - I mainly focused on unit testing and test driving in most functionality.
+    - I didn't do any mocking, so there are not really any good database failure scenario tests.
+      - I really wanted to try a `Mox` based approach to the injecting errors via the `Ecto.Adapter` behaviour(s), but ran into some errors, and decided for the sake of time to just note that low-level database errors were not tested.
+      - Another option would be the excellent library called `Mimic`, but I figued it was best not to showcase mocking since it's generally frowned-upon.
+    - Otherwise, I was curious about why a transaction was good enough to pass some concurrency cases in the unit tests so I built some integration tests to confirm that `FOR UPDATE` was necessary for the transactions (as built, at least).
 
 ## Assumptions
 A lot of the assumptions I had were covered in the "Design" section, but here are some as they pertain to how someone would actually use the service.
