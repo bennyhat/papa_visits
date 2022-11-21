@@ -16,8 +16,8 @@ This is an implementation of the core "Home Visit Service" functionality using E
   * [Other tooling in the Makefile](#other-tooling-in-the-makefile)
   * [Using the Application](#using-the-application)
     + [Create a user](#create-a-user)
-  * [Request a visit](#request-a-visit)
-  * [Find and complete a visit](#find-and-complete-a-visit)
+    + [Request a visit](#request-a-visit)
+    + [Find and complete a visit](#find-and-complete-a-visit)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -270,7 +270,7 @@ curl \
 )
 ```
 
-### Request a visit
+#### Request a visit
 The created user will only have 120 minutes to spend, so keep that in mind. Using the `token` variable from the last step, I can now request a visit with the following. Note that the `Bearer` specification is no used on the header, which I noticed long after adding `Pow` token support.
 
 ``` shell
@@ -285,7 +285,7 @@ curl \
 )
 ```
 
-### Find and complete a visit
+#### Find and complete a visit
 Now to act as a pal, we'll need to be a different user, find the visit and complete it. The final command will print the json response showing the resulting minutes for the papa and pal.
 
 ``` shell
