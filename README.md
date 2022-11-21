@@ -104,11 +104,6 @@ Here is a break down of some design decisions for various parts of the system:
     - I also made an effort to consider (and integration test) concurrency problems. The scenarios for this are detailed later in this README, but ultimately, I settled on `SELECT FOR UPDATE` as a pessimistic locking mechanism. Other options would have been:
       - Using postgres advisory locks as those allow the lock to be a bit more semantic. Locking while checking the total minutes used by a user doesn't make a whole lot of sense if you phrase the check as `FOR UPDATE`, so an advisory lock would allow the intention to be more clear.
       - Using "Repeatable Read" or "Serializeable" transaction isolation would likely work too, though I didn't try it. Retries of the failed transactions would be necessary in this case.
-  - Dev environment
-    - I typically use docker to stand-up postgres in my Elixir dev environments, but I was curious to see what it would look like to just run an `asdf` supplied copy of postgres.
-    - Drove the orchestration of that, tools bootstrapping and the app compile => release => start with `make`.
-    - The main goal of the tooling was that a user who has `asdf` and `make` (and DevTools on Mac) could just run `make test` or `make start` and just have it work.
-    - I'm not very pleased with how complex the `Makefile` ended up being. I think docker-compose + some elixir based tasks, such as `Divo` would have been a better choice overall from a "not everyone knows `make`" standpoint.
   - Database
     - The models for this were kept pretty similar with the models provided in the service specification.
     - I did just make it so the `user` for a transaction is recorded through the `transaction`'s visit for the sake of simplicity.
@@ -122,6 +117,11 @@ Here is a break down of some design decisions for various parts of the system:
       - I really wanted to try a `Mox` based approach to the injecting errors via the `Ecto.Adapter` behaviour(s), but ran into some errors, and decided for the sake of time to just note that low-level database errors were not tested.
       - Another option would be the excellent library called `Mimic`, but I figued it was best not to showcase mocking since it's generally frowned-upon.
     - Otherwise, I was curious about why a transaction was good enough to pass some concurrency cases in the unit tests so I built some integration tests to confirm that `FOR UPDATE` was necessary for the transactions (as built, at least).
+  - Dev environment
+    - I typically use docker to stand-up postgres in my Elixir dev environments, but I was curious to see what it would look like to just run an `asdf` supplied copy of postgres.
+    - Drove the orchestration of that, tools bootstrapping and the app compile => release => start with `make`.
+    - The main goal of the tooling was that a user who has `asdf` and `make` (and DevTools on Mac) could just run `make test` or `make start` and just have it work.
+    - I'm not very pleased with how complex the `Makefile` ended up being. I think docker-compose + some elixir based tasks, such as `Divo` would have been a better choice overall from a "not everyone knows `make`" standpoint.
 
 ## Assumptions
 A lot of the assumptions I had were covered in the "Design" section, but here are some as they pertain to how someone would actually use the service.
