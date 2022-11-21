@@ -122,7 +122,7 @@ A lot of the assumptions I had were covered in the "Design" section, but here ar
   - This service has some interesting scenarios that span different endpoints, which is a fun exercise:
     - Repeated visit requests -
       - Likelihood - unlikely
-      - Description - a user requests multiple visits at the same time. This should only accept one visit instead of interleaving the two requests, which makes them not consider the minutes taken by each other.
+      - Description - a user requests multiple visits that would exceed their budget at the same time. This should only accept one visit instead of interleaving the two requests, which makes them not consider the minutes taken by each other.
       - Notes
         - This is what requires a lock `FOR UPDATE` on a user while their minutes and visits are being checked and potentially updated (update = add new visit).
     - Repeated visited completions
