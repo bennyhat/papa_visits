@@ -2,6 +2,25 @@
 
 This is an implementation of the core "Home Visit Service" functionality using Elixir's `Phoenix` Framework.
 
+- [Design](#design)
+  * [Technology Choices](#technology-choices)
+  * [Design choices](#design-choices)
+- [Assumptions](#assumptions)
+- [Running the service](#running-the-service)
+  * [Getting the most basic tools installed](#getting-the-most-basic-tools-installed)
+  * [Getting the next level of tools installed](#getting-the-next-level-of-tools-installed)
+  * [Running the tests](#running-the-tests)
+  * [Running the integration tests](#running-the-integration-tests)
+  * [Running the application release](#running-the-application-release)
+  * [Running the dev version of the application](#running-the-dev-version-of-the-application)
+  * [Other tooling in the Makefile](#other-tooling-in-the-makefile)
+  * [Using the Application](#using-the-application)
+    + [Create a user](#create-a-user)
+  * [Request a visit](#request-a-visit)
+  * [Find and complete a visit](#find-and-complete-a-visit)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 ## Design
 ### Technology Choices
 The tech choices are as follows:
@@ -242,7 +261,8 @@ This section will use the following tools to demonstrate use:
 This will create a user and get back a token, which we'll use in subsequent requests
 ``` shell
 token=$(
-curl --header "Content-Type: application/json" \
+curl \
+  --header "Content-Type: application/json" \
   --request POST \
   --data '{"email": "ben@example.com", "password":"longpassword", "first_name": "Ben", "last_name": "Brewer"}' \
   http://localhost:14001/api/auth/registration \
@@ -255,7 +275,8 @@ The created user will only have 120 minutes to spend, so keep that in mind. Usin
 
 ``` shell
 visit_id=$(
-curl --header "Content-Type: application/json" \
+curl \
+  --header "Content-Type: application/json" \
   --header "Authorization: ${token}" \
   --request POST \
   --data '{"date": "2024-10-10", "minutes":10, "tasks": [{"name": "help me"}]}' \
@@ -270,7 +291,8 @@ Now to act as a pal, we'll need to be a different user, find the visit and compl
 ``` shell
 # create a pal user and get the token for them
 pal_token=$(
-curl --header "Content-Type: application/json" \
+curl \
+  --header "Content-Type: application/json" \
   --request POST \
   --data '{"email": "pal@example.com", "password":"longpassword", "first_name": "Pal", "last_name": "Amino"}' \
   http://localhost:14001/api/auth/registration \
@@ -279,7 +301,8 @@ curl --header "Content-Type: application/json" \
 
 # look at available visits and pick the first one
 pal_visit_id=$(
-curl --header "Content-Type: application/json" \
+curl \
+  --header "Content-Type: application/json" \
   --header "Authorization: ${pal_token}" \
   --request GET \
   http://localhost:14001/api/visit \
@@ -287,7 +310,8 @@ curl --header "Content-Type: application/json" \
 )
 
 # complete the visit
-curl --header "Content-Type: application/json" \
+curl \
+  --header "Content-Type: application/json" \
   --header "Authorization: ${pal_token}" \
   --request PUT \
   "http://localhost:14001/api/visit/${pal_visit_id}/complete" \
