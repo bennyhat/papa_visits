@@ -53,7 +53,7 @@ defmodule PapaVisitsWebTest do
 
   describe "complete_visit/1" do
     setup %{user: papa, token: papa_token} do
-      %{visit: visit} = request_visit(papa, papa_token)
+      %{visit: visit} = request_visit!(papa, papa_token)
       %{token: pal_token} = register_user()
 
       on_exit(fn ->
@@ -100,6 +100,86 @@ defmodule PapaVisitsWebTest do
     end
   end
 
+  describe "request and complete visit race conditions" do
+    setup do
+      %{token: papa_token, user: papa_user} = register_user()
+      %{token: pal_token} = register_user()
+
+      on_exit(fn ->
+        unregister_user!(papa_token)
+      end)
+
+      on_exit(fn ->
+        unregister_user!(pal_token)
+      end)
+
+      minutes = papa_user["minutes"]
+
+      visit_count = 6
+      visit_minutes = minutes / visit_count
+      assert visit_minutes == Float.round(visit_minutes)
+      visit_minutes = round(visit_minutes)
+
+      visits =
+        for _i <- Range.new(1, visit_count) do
+          %{visit: visit} = request_visit!(%{"minutes" => visit_minutes}, papa_token)
+          visit
+        end
+
+      [
+        papa_token: papa_token,
+        pal_token: pal_token,
+        visits: visits
+      ]
+    end
+
+    test "a visit requested while other visits are completed does not slip through", %{
+      papa_token: papa_token,
+      pal_token: pal_token,
+      visits: visits
+    } do
+      [%{"minutes" => minutes} | _] = visits
+
+      request_task =
+        Task.async(fn -> request_visit(%{"minutes" => minutes}, papa_token, Primary) end)
+
+      completion_tasks =
+        for visit <- visits do
+          Task.async(fn ->
+            client = Enum.random([Primary, Secondary])
+            complete_visit(visit, pal_token, client)
+          end)
+        end
+
+      tasks = completion_tasks ++ [request_task]
+
+      results =
+        for task <- tasks do
+          Task.await(task)
+        end
+
+      expected_request_error =
+        {:error,
+         %{
+           "minutes" => ["exceeds budget"]
+         }}
+
+      assert expected_request_error in results
+      assert Enum.count(tasks) == Enum.count(Enum.uniq(results))
+
+      results = List.delete(results, expected_request_error)
+
+      assert Enum.all?(results, fn result ->
+               match?(
+                 {:ok, _},
+                 result
+               )
+             end)
+
+      assert {:ok, %{"minutes" => 0}} = Primary.get_user(papa_token)
+    end
+  end
+
   describe "register_user/1" do
     test "given valid params it registers a user" do
       params = Factory.params_for(:user_creation)
@@ -124,12 +204,27 @@ defmodule PapaVisitsWebTest do
     end
   end
 
-  defp request_visit(user, token) do
-    minutes = user["minutes"]
-    params = Factory.params_for(:visit_params, minutes: minutes)
-    {:ok, visit} = Primary.request_visit(params, token)
+  defp request_visit!(user, token) do
+    {:ok, visit} = request_visit(user, token)
 
     %{visit: visit}
+  end
+
+  defp request_visit(user, token, client \\ Primary) do
+    minutes = user["minutes"]
+    params = Factory.params_for(:visit_params, minutes: minutes)
+    client.request_visit(params, token)
+  end
+
+  defp complete_visit(visit, token, client) do
+    params =
+      Factory.params_for(
+        :transaction_params,
+        pal_id: nil,
+        visit_id: visit["id"]
+      )
+
+    client.complete_visit(params, token)
   end
 
   defp register_user do
