@@ -35,6 +35,6 @@ defmodule PapaVisitsWeb.Router do
     get "/visit", VisitController, :index
     post "/visit", VisitController, :create
 
-    put "/visit/:id/complete", VisitController, :update_completed
+    put "/visit/:visit_id/complete", VisitController, :update_completed
   end
 end

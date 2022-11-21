@@ -52,14 +52,7 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
       pal_user: pal_user,
       visit: visit
     } do
-      params =
-        Factory.string_params_for(
-          :transaction_params,
-          pal_id: nil,
-          visit_id: visit["id"]
-        )
-
-      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+      path = Routes.api_visit_path(conn, :update_completed, visit["id"])
 
       expected_visit_id = visit["id"]
       expected_pal_id = pal_user["id"]
@@ -84,7 +77,7 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                }
              } =
                conn
-               |> put(path, params)
+               |> put(path, %{})
                |> json_response(200)
     end
 
@@ -97,10 +90,10 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
         Factory.string_params_for(
           :transaction_params,
           pal_id: Faker.UUID.v4(),
-          visit_id: visit["id"]
+          visit_id: nil
         )
 
-      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+      path = Routes.api_visit_path(conn, :update_completed, visit["id"])
 
       expected_pal_id = pal_user["id"]
 
@@ -117,18 +110,38 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                |> json_response(200)
     end
 
-    test "given a pal id that is the same as the visit's papa, it is rejecgted", %{
-      conn: papa_conn,
+    test "given a visit_id in request body, it is ignored", %{
+      pal_conn: conn,
       visit: visit
     } do
       params =
         Factory.string_params_for(
           :transaction_params,
-          pal_id: nil,
-          visit_id: visit["id"]
+          visit_id: Faker.UUID.v4(),
+          pal_id: nil
         )
 
-      path = Routes.api_visit_path(papa_conn, :update_completed, params["visit_id"])
+      path = Routes.api_visit_path(conn, :update_completed, visit["id"])
+
+      expected_visit_id = visit["id"]
+
+      assert %{
+               "data" => %{
+                 "visit" => %{
+                   "id" => ^expected_visit_id
+                 }
+               }
+             } =
+               conn
+               |> put(path, params)
+               |> json_response(200)
+    end
+
+    test "given a pal id that is the same as the visit's papa, it is rejecgted", %{
+      conn: papa_conn,
+      visit: visit
+    } do
+      path = Routes.api_visit_path(papa_conn, :update_completed, visit["id"])
 
       assert %{
                "error" => %{
@@ -140,19 +153,12 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                }
              } =
                papa_conn
-               |> put(path, params)
+               |> put(path, %{})
                |> json_response(422)
     end
 
     test "given syntactically invalid data it indicates that", %{pal_conn: conn} do
-      params =
-        Factory.string_params_for(
-          :transaction_params,
-          pal_id: nil,
-          visit_id: "not-a-uuid"
-        )
-
-      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+      path = Routes.api_visit_path(conn, :update_completed, "not-a-uuid")
 
       assert %{
                "error" => %{
@@ -164,19 +170,12 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                }
              } =
                conn
-               |> put(path, params)
+               |> put(path, %{})
                |> json_response(422)
     end
 
     test "given semantically invalid data it indicates that", %{pal_conn: conn} do
-      params =
-        Factory.string_params_for(
-          :transaction_params,
-          pal_id: nil,
-          visit_id: Faker.UUID.v4()
-        )
-
-      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+      path = Routes.api_visit_path(conn, :update_completed, Faker.UUID.v4())
 
       assert %{
                "error" => %{
@@ -188,7 +187,7 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                }
              } =
                conn
-               |> put(path, params)
+               |> put(path, %{})
                |> json_response(422)
     end
 

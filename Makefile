@@ -172,7 +172,7 @@ run: start.db migrations.dev run.app
 run.interactive: start.db migrations.dev run.app.interactive
 
 .PHONY: test
-test:
+test: start.db migrations.test
 	@echo Running tests
 	mix test
 

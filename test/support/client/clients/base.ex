@@ -33,11 +33,11 @@ defmodule PapaVisits.Test.Support.Clients.Base do
         |> convert_response()
       end
 
-      def complete_visit(body, token) do
-        path_params = Keyword.new(body)
+      def complete_visit(visit_id, token) do
+        path_params = [visit_id: visit_id]
 
         "/visit/:visit_id/complete"
-        |> put(body, path_params: path_params, headers: [{"authorization", token}])
+        |> put(%{}, opts: [path_params: path_params], headers: [{"authorization", token}])
         |> convert_response()
       end
 

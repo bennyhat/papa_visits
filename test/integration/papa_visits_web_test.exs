@@ -64,29 +64,15 @@ defmodule PapaVisitsWebTest do
     end
 
     test "given valid params the visit is completed", %{token: token, visit: visit} do
-      params =
-        Factory.params_for(
-          :transaction_params,
-          pal_id: nil,
-          visit_id: visit["id"]
-        )
-
-      assert {:ok, %{"id" => _}} = Primary.complete_visit(params, token)
+      assert {:ok, %{"id" => _}} = Primary.complete_visit(visit["id"], token)
     end
 
     test "two concurrent completions will only honor what completes first", %{
       token: token,
       visit: visit
     } do
-      params =
-        Factory.params_for(
-          :transaction_params,
-          pal_id: nil,
-          visit_id: visit["id"]
-        )
-
-      task_one = Task.async(fn -> Primary.complete_visit(params, token) end)
-      task_two = Task.async(fn -> Secondary.complete_visit(params, token) end)
+      task_one = Task.async(fn -> Primary.complete_visit(visit["id"], token) end)
+      task_two = Task.async(fn -> Secondary.complete_visit(visit["id"], token) end)
 
       result_one = Task.await(task_one)
       result_two = Task.await(task_two)
@@ -228,14 +214,7 @@ defmodule PapaVisitsWebTest do
   end
 
   defp complete_visit(visit, token, client) do
-    params =
-      Factory.params_for(
-        :transaction_params,
-        pal_id: nil,
-        visit_id: visit["id"]
-      )
-
-    client.complete_visit(params, token)
+    client.complete_visit(visit["id"], token)
   end
 
   defp register_user do
