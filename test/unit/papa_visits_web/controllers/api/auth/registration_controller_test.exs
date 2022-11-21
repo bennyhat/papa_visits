@@ -160,6 +160,20 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
       assert get_visit(papa_conn, visit_id)
       assert %{visit_id: ^visit_id, pal_id: nil} = get_transaction(papa_conn, tx["id"])
     end
+
+    test "unauthenticated users are not allowed", %{conn: conn} do
+      path = Routes.api_auth_registration_path(conn, :delete)
+
+      assert %{
+               "error" => %{
+                 "status" => 401,
+                 "message" => "Not authenticated"
+               }
+             } =
+               conn
+               |> delete(path)
+               |> json_response(401)
+    end
   end
 
   defp create_user(conn) do

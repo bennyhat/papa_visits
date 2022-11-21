@@ -52,8 +52,6 @@ defmodule PapaVisitsWeb.Api.UserControllerTest do
 
       refute Map.has_key?(user, "password")
       refute Map.has_key?(user, "password_hash")
-
-      # TODO - assert visits once those are wired in
     end
 
     test "unauthenticated users are not allowed", %{xconn: conn} do

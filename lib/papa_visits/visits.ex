@@ -54,6 +54,7 @@ defmodule PapaVisits.Visits do
       Multi.new()
       |> Multi.one(:visit, &transaction_visit(&1, params.visit_id))
       |> Multi.run(:check_visit, &check_visit(&1, &2, params))
+      |> Multi.run(:check_pal, &check_pal(&1, &2, params))
       |> Multi.update(:complete_visit, fn %{visit: visit} ->
         Visit.status_changeset(visit, :completed)
       end)
@@ -171,6 +172,17 @@ defmodule PapaVisits.Visits do
   end
 
   defp check_visit(_, %{visit: _visit}, _params), do: {:ok, :visit_active}
+
+  defp check_pal(_, %{visit: %{user_id: same}}, %{pal_id: same} = params) do
+    changeset =
+      params
+      |> Transaction.unvalidated_changeset()
+      |> Ecto.Changeset.add_error(:pal_id, "can't be same as papa")
+
+    {:error, changeset}
+  end
+
+  defp check_pal(_, _, _), do: {:ok, :pal_is_different_than_papa}
 
   defp take_from_papa(%{transaction: transaction}) do
     visit_id = transaction.visit_id

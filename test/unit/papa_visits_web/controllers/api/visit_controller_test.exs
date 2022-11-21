@@ -29,11 +29,9 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
 
   setup :user_and_conn
 
-  # TODO - drive in that token must match pal_id
-  # TODO - actually just drive in having the pal_id be from the header
   describe "PUT /visit/:id/complete => update_completed/2" do
     setup %{conn: papa_conn, user: papa_user} do
-      %{user: pal_user} = user_and_conn(%{conn: papa_conn})
+      %{conn: pal_conn, user: pal_user} = user_and_conn(%{conn: papa_conn})
 
       params =
         Factory.string_params_for(:visit_params, minutes: papa_user["minutes"], user_id: nil)
@@ -45,11 +43,11 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                |> post(path, params)
                |> json_response(200)
 
-      %{pal_user: pal_user, visit: visit}
+      %{pal_conn: pal_conn, pal_user: pal_user, visit: visit}
     end
 
     test "given a valid request it completes the visit", %{
-      conn: conn,
+      pal_conn: conn,
       user: papa_user,
       pal_user: pal_user,
       visit: visit
@@ -57,8 +55,8 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
       params =
         Factory.string_params_for(
           :transaction_params,
-          visit_id: visit["id"],
-          pal_id: pal_user["id"]
+          pal_id: nil,
+          visit_id: visit["id"]
         )
 
       path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
@@ -90,12 +88,68 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                |> json_response(200)
     end
 
-    test "given syntactically invalid data it indicates that", %{conn: conn} do
+    test "given a pal_id in request body, it is ignored", %{
+      pal_conn: conn,
+      pal_user: pal_user,
+      visit: visit
+    } do
       params =
         Factory.string_params_for(
           :transaction_params,
-          visit_id: "not-a-uuid",
-          pal_id: nil
+          pal_id: Faker.UUID.v4(),
+          visit_id: visit["id"]
+        )
+
+      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+
+      expected_pal_id = pal_user["id"]
+
+      assert %{
+               "data" => %{
+                 "id" => _,
+                 "pal" => %{
+                   "id" => ^expected_pal_id
+                 }
+               }
+             } =
+               conn
+               |> put(path, params)
+               |> json_response(200)
+    end
+
+    test "given a pal id that is the same as the visit's papa, it is rejecgted", %{
+      conn: papa_conn,
+      visit: visit
+    } do
+      params =
+        Factory.string_params_for(
+          :transaction_params,
+          pal_id: nil,
+          visit_id: visit["id"]
+        )
+
+      path = Routes.api_visit_path(papa_conn, :update_completed, params["visit_id"])
+
+      assert %{
+               "error" => %{
+                 "status" => 422,
+                 "message" => "Validation failed.",
+                 "errors" => %{
+                   "pal_id" => ["can't be same as papa"]
+                 }
+               }
+             } =
+               papa_conn
+               |> put(path, params)
+               |> json_response(422)
+    end
+
+    test "given syntactically invalid data it indicates that", %{pal_conn: conn} do
+      params =
+        Factory.string_params_for(
+          :transaction_params,
+          pal_id: nil,
+          visit_id: "not-a-uuid"
         )
 
       path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
@@ -105,8 +159,7 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                  "status" => 422,
                  "message" => "Parameter validation failed.",
                  "errors" => %{
-                   "visit_id" => ["is invalid"],
-                   "pal_id" => ["can't be blank"]
+                   "visit_id" => ["is invalid"]
                  }
                }
              } =
@@ -115,10 +168,11 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                |> json_response(422)
     end
 
-    test "given semantically invalid data it indicates that", %{conn: conn} do
+    test "given semantically invalid data it indicates that", %{pal_conn: conn} do
       params =
         Factory.string_params_for(
           :transaction_params,
+          pal_id: nil,
           visit_id: Faker.UUID.v4()
         )
 
@@ -136,6 +190,31 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
                conn
                |> put(path, params)
                |> json_response(422)
+    end
+
+    test "unauthenticated users are not allowed", %{
+      xconn: conn,
+      pal_user: pal_user,
+      visit: visit
+    } do
+      params =
+        Factory.string_params_for(
+          :transaction_params,
+          visit_id: visit["id"],
+          pal_id: pal_user["id"]
+        )
+
+      path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
+
+      assert %{
+               "error" => %{
+                 "status" => 401,
+                 "message" => "Not authenticated"
+               }
+             } =
+               conn
+               |> put(path, params)
+               |> json_response(401)
     end
   end
 
@@ -192,6 +271,31 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
 
         assert_map_in_list(expected_task, actual_tasks, comparison)
       end
+    end
+
+    test "given a user id in the request body that is ignored", %{conn: conn, user: user} do
+      params =
+        Factory.string_params_for(
+          :visit_params,
+          minutes: user["minutes"],
+          user_id: Faker.UUID.v4()
+        )
+
+      path = Routes.api_visit_path(conn, :create)
+
+      expected_user_id = user["id"]
+
+      assert %{
+               "data" => %{
+                 "id" => _,
+                 "user" => %{
+                   "id" => ^expected_user_id
+                 }
+               }
+             } =
+               conn
+               |> post(path, params)
+               |> json_response(200)
     end
 
     test "given syntactic validation failures, reflects those", %{conn: conn} do

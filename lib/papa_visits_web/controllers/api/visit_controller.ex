@@ -16,7 +16,6 @@ defmodule PapaVisitsWeb.Api.VisitController do
     end
   end
 
-  # TODO - add test for ensuring passed user_id is ignored
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, params) do
     params_with_user = Map.put(params, "user_id", conn.assigns.current_user.id)
@@ -29,7 +28,9 @@ defmodule PapaVisitsWeb.Api.VisitController do
 
   @spec update_completed(Conn.t(), map()) :: Conn.t()
   def update_completed(conn, params) do
-    with {:ok, transaction_params} <- Transaction.from(params),
+    params_with_pal = Map.put(params, "pal_id", conn.assigns.current_user.id)
+
+    with {:ok, transaction_params} <- Transaction.from(params_with_pal),
          {:ok, transaction} <- PapaVisits.complete_visit(transaction_params) do
       render(conn, "update_completed.json", transaction: transaction)
     end

@@ -19,13 +19,16 @@ defmodule PapaVisitsWeb.Router do
 
     scope "/auth", Auth, as: :auth do
       post "/registration", RegistrationController, :create
-      delete "/registration", RegistrationController, :delete
       post "/session", SessionController, :create
     end
   end
 
   scope "/api", PapaVisitsWeb.Api, as: :api do
     pipe_through [:api, :api_protected]
+
+    scope "/auth", Auth, as: :auth do
+      delete "/registration", RegistrationController, :delete
+    end
 
     get "/user", UserController, :show
 
