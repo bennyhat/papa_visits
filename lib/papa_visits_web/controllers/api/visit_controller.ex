@@ -16,9 +16,10 @@ defmodule PapaVisitsWeb.Api.VisitController do
     end
   end
 
+  # TODO - add test for ensuring passed user_id is ignored
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, params) do
-    params_with_user = Map.put(params, :user_id, conn.assigns.current_user.id)
+    params_with_user = Map.put(params, "user_id", conn.assigns.current_user.id)
 
     with {:ok, visit_params} <- Visit.from(params_with_user),
          {:ok, visit} <- PapaVisits.request_visit(visit_params) do

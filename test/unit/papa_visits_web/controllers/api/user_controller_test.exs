@@ -2,7 +2,7 @@ defmodule PapaVisitsWeb.Api.UserControllerTest do
   use PapaVisitsWeb.ConnCase
 
   setup %{conn: conn} do
-    params = Factory.string_params_for(:user_creation, minutes: nil)
+    params = Factory.string_params_for(:user_creation)
     path = Routes.api_auth_registration_path(conn, :create)
 
     %{

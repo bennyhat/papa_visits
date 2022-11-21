@@ -9,6 +9,9 @@ secret_key_base =
 
 port = String.to_integer(System.get_env("PORT") || "4000")
 
+config :papa_visits,
+  default_minutes: String.to_integer(System.fetch_env!("DEFAULT_MINUTES"))
+
 config :papa_visits, PapaVisitsWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: port],
   url: [host: "localhost", port: port, scheme: "http"],

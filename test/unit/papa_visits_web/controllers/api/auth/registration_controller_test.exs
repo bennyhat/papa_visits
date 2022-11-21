@@ -3,7 +3,7 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
 
   describe "POST /registration => create/2" do
     test "given a user with all required fields, creates it", %{conn: conn} do
-      params = Factory.string_params_for(:user_creation, minutes: nil)
+      params = Factory.string_params_for(:user_creation)
 
       path = Routes.api_auth_registration_path(conn, :create)
 
@@ -21,7 +21,6 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
       params =
         Factory.string_params_for(
           :user_creation,
-          minutes: nil,
           password: nil,
           first_name: nil,
           last_name: nil,
@@ -51,7 +50,6 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
       params =
         Factory.string_params_for(
           :user_creation,
-          minutes: nil,
           password: "easy",
           email: "not-an-email"
         )
@@ -79,7 +77,6 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
       params =
         Factory.params_for(
           :user_creation,
-          minutes: nil,
           email: existing_email
         )
 

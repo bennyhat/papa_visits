@@ -3,7 +3,7 @@ defmodule PapaVisitsWeb.Api.VisitControllerTest do
   import Assertions
 
   def user_and_conn(%{conn: conn}) do
-    params = Factory.string_params_for(:user_creation, minutes: nil)
+    params = Factory.string_params_for(:user_creation)
     path = Routes.api_auth_registration_path(conn, :create)
 
     %{

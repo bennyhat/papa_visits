@@ -92,7 +92,7 @@ define track-start-app
 			rm -rf $(call start_app,$(1)); \
 			sleep 1; \
 		done; \
-	" || echo "- Cleaned up pid file for stopped application"
+	" || echo "- Cleaned up pid file for stopped application $(1)"
 endef
 
 release_and_pid_a = $(and $(wildcard $(release_a)), $(wildcard $(start_app_a)))
@@ -128,7 +128,7 @@ $(start_app_b): $(release_b)
 .PHONY: start.app.interactive
 start.app.interactive: $(release_a)
 	@echo Starting application
-	@$(call do-start,start_iex)
+	@$(call do-start,a,start_iex)
 
 .PHONY: start
 start: start.db migrations.prod $(start_app_a)

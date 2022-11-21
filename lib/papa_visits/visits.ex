@@ -102,12 +102,7 @@ defmodule PapaVisits.Visits do
   defp validate_changeset(_repo, %{changeset: changeset}), do: {:error, changeset}
 
   defp user_minutes(%{changeset: changeset}) do
-    # AFAIK transactions are only serialized per-repo-process due to
-    # Ecto's sandbox connection limits
-    # A `FOR UPDATE` here (though not the only solution)
-    # Makes it so concurrent requests (and transacts that actually write data)
-    # on a different node also wait for the check this is in.
-
+    # FOR UPDATE use validated by integration tests
     user_id = Ecto.Changeset.fetch_field!(changeset, :user_id)
 
     from u in User,
@@ -153,7 +148,7 @@ defmodule PapaVisits.Visits do
   end
 
   defp transaction_visit(_, visit_id) do
-    # Same deal with `FOR UPDATE` here to deal with multi repo-process scenarios
+    # FOR UPDATE use validated by integration tests
     from v in Visit, where: v.id == ^visit_id, lock: "FOR UPDATE"
   end
 
