@@ -12,10 +12,15 @@ defmodule PapaVisits.Test.Support.Clients.Base do
       plug Tesla.Middleware.JSON
       plug Tesla.Middleware.PathParams
 
-      def child_spec(_) do
-        opts = [pools: [default: [size: 10, count: System.schedulers_online()]]]
+      def child_spec(opts) do
+        {id, opts} = Keyword.pop(opts, :id, __MODULE__)
 
-        Supervisor.child_spec({Finch, Keyword.put(opts, :name, __MODULE__)}, id: __MODULE__)
+        opts =
+          [pools: [default: [size: 10, count: System.schedulers_online()]]]
+          |> Keyword.merge(opts)
+          |> Keyword.put_new(:name, __MODULE__)
+
+        Supervisor.child_spec({Finch, opts}, id: id)
       end
 
       def request_visit(body, token) do
@@ -25,16 +30,22 @@ defmodule PapaVisits.Test.Support.Clients.Base do
       end
 
       def complete_visit(body, token) do
-        visit_id = Map.pop(body, "visit_id")
+        path_params = Keyword.new(body)
 
         "/visit/:visit_id/complete"
-        |> put(body, path_params: [visit_id: visit_id], headers: [{"authorization", token}])
+        |> put(body, path_params: path_params, headers: [{"authorization", token}])
         |> convert_response()
       end
 
       def register_user(body) do
         "/auth/registration"
         |> post(body)
+        |> convert_response()
+      end
+
+      def unregister_user(token) do
+        "/auth/registration"
+        |> delete(headers: [{"authorization", token}])
         |> convert_response()
       end
 

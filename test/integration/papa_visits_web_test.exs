@@ -1,22 +1,25 @@
 defmodule PapaVisitsWebTest do
   use ExUnit.Case
 
+  alias PapaVisits.Test.Support.Clients.Cleanup
   alias PapaVisits.Test.Support.Clients.Primary
   alias PapaVisits.Test.Support.Clients.Secondary
 
   alias PapaVisits.Factory
 
   setup do
-    start_supervised!(Primary)
-    start_supervised!(Secondary)
+    start_supervised(Primary)
+    start_supervised(Secondary)
 
     :ok
   end
 
   setup do
-    %{user: %{"id" => _id}} = context = register_user()
+    %{token: token} = context = register_user()
 
-    # TODO - add an unregister endpoint, which may or may not be a legit thing
+    on_exit(fn ->
+      unregister_user!(token)
+    end)
 
     context
   end
@@ -51,32 +54,35 @@ defmodule PapaVisitsWebTest do
   describe "complete_visit/1" do
     setup %{user: papa, token: papa_token} do
       %{visit: visit} = request_visit(papa, papa_token)
-      %{user: user, token: token} = register_user()
+      %{token: pal_token} = register_user()
 
-      [user: user, token: token, visit: visit]
+      on_exit(fn ->
+        unregister_user!(pal_token)
+      end)
+
+      [token: pal_token, visit: visit]
     end
 
-    test "given valid params the visit is completed", %{user: user, token: token, visit: visit} do
+    test "given valid params the visit is completed", %{token: token, visit: visit} do
       params =
         Factory.params_for(
           :transaction_params,
-          visit_id: visit["id"],
-          pal_id: user["id"]
+          pal_id: nil,
+          visit_id: visit["id"]
         )
 
       assert {:ok, %{"id" => _}} = Primary.complete_visit(params, token)
     end
 
     test "two concurrent completions will only honor what completes first", %{
-      user: user,
       token: token,
       visit: visit
     } do
       params =
         Factory.params_for(
           :transaction_params,
-          visit_id: visit["id"],
-          pal_id: user["id"]
+          pal_id: nil,
+          visit_id: visit["id"]
         )
 
       task_one = Task.async(fn -> Primary.complete_visit(params, token) end)
@@ -98,13 +104,20 @@ defmodule PapaVisitsWebTest do
     test "given valid params it registers a user" do
       params = Factory.params_for(:user_creation)
 
-      assert {:ok, %{"access_token" => _}} = Primary.register_user(params)
+      assert {:ok, %{"access_token" => token}} = Primary.register_user(params)
+
+      unregister_user!(token)
     end
   end
 
   describe "create_session/1" do
     test "given valid params it creates a session for a user" do
-      %{params: params} = register_user()
+      %{params: params, token: token} = register_user()
+
+      on_exit(fn ->
+        unregister_user!(token)
+      end)
+
       login = Map.take(params, [:email, :password])
 
       assert {:ok, %{"access_token" => _}} = Primary.create_session(login)
@@ -129,5 +142,32 @@ defmodule PapaVisitsWebTest do
       token: token,
       params: params
     }
+  end
+
+  defp unregister_user!(token) do
+    {:ok, exit_supervisor} = Supervisor.start_link([], strategy: :one_for_one)
+    child_spec = Supervisor.child_spec(Cleanup, [])
+
+    case Supervisor.start_child(exit_supervisor, child_spec) do
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, {{:already_started, _pid}, _}} ->
+        :ok
+
+      {:error, error} ->
+        raise "Unable to start supervisor for test client #{inspect(error)} - database will need some cleaning"
+
+      other ->
+        other
+    end
+
+    case Cleanup.unregister_user(token) do
+      {:ok, _} ->
+        :ok
+
+      other ->
+        raise "Unable to unregister user: #{inspect(other)} - database will need some cleaning"
+    end
   end
 end

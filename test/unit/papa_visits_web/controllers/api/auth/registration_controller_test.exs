@@ -103,10 +103,9 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
       papa_conn = create_user(conn)
 
       papa = get_user(papa_conn)
-      pal = get_user(pal_conn)
 
       visit = request_visit(papa_conn, papa)
-      transaction = complete_visit(pal_conn, visit, pal)
+      transaction = complete_visit(pal_conn, visit)
 
       [
         papa_conn: papa_conn,
@@ -221,12 +220,12 @@ defmodule PapaVisitsWeb.Api.Auth.RegistrationControllerTest do
     visit
   end
 
-  defp complete_visit(conn, visit, pal) do
+  defp complete_visit(conn, visit) do
     params =
       Factory.string_params_for(
         :transaction_params,
-        visit_id: visit["id"],
-        pal_id: pal["id"]
+        pal_id: nil,
+        visit_id: visit["id"]
       )
 
     path = Routes.api_visit_path(conn, :update_completed, params["visit_id"])
