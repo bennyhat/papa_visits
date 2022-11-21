@@ -101,6 +101,8 @@ defmodule PapaVisitsWebTest do
   end
 
   describe "request and complete visit race conditions" do
+    @visit_count 6
+
     setup do
       %{token: papa_token, user: papa_user} = register_user()
       %{token: pal_token} = register_user()
@@ -115,13 +117,12 @@ defmodule PapaVisitsWebTest do
 
       minutes = papa_user["minutes"]
 
-      visit_count = 6
-      visit_minutes = minutes / visit_count
+      visit_minutes = minutes / @visit_count
       assert visit_minutes == Float.round(visit_minutes)
       visit_minutes = round(visit_minutes)
 
       visits =
-        for _i <- Range.new(1, visit_count) do
+        for _i <- Range.new(1, @visit_count) do
           %{visit: visit} = request_visit!(%{"minutes" => visit_minutes}, papa_token)
           visit
         end
@@ -133,50 +134,60 @@ defmodule PapaVisitsWebTest do
       ]
     end
 
-    test "a visit requested while other visits are completed does not slip through", %{
-      papa_token: papa_token,
-      pal_token: pal_token,
-      visits: visits
-    } do
-      [%{"minutes" => minutes} | _] = visits
+    for placement <- Range.new(1, @visit_count) do
+      test "a visit requested in the midst of completions does not slip in. Placement: #{placement}",
+           %{
+             papa_token: papa_token,
+             pal_token: pal_token,
+             visits: visits
+           } do
+        request_placement = unquote(placement) - 1
+        [minutes_config | _] = visits
 
-      request_task =
-        Task.async(fn -> request_visit(%{"minutes" => minutes}, papa_token, Primary) end)
-
-      completion_tasks =
-        for visit <- visits do
-          Task.async(fn ->
-            client = Enum.random([Primary, Secondary])
-            complete_visit(visit, pal_token, client)
-          end)
+        request_function = fn ->
+          request_visit(minutes_config, papa_token, Primary)
         end
 
-      tasks = completion_tasks ++ [request_task]
+        completion_functions =
+          for {visit, index} <- Enum.with_index(visits) do
+            fn ->
+              client = Enum.at([Primary, Secondary], rem(index, 2))
+              complete_visit(visit, pal_token, client)
+            end
+          end
 
-      results =
-        for task <- tasks do
-          Task.await(task)
-        end
+        functions = List.insert_at(completion_functions, request_placement, request_function)
 
-      expected_request_error =
-        {:error,
-         %{
-           "minutes" => ["exceeds budget"]
-         }}
+        tasks =
+          for function <- functions do
+            Task.async(function)
+          end
 
-      assert expected_request_error in results
-      assert Enum.count(tasks) == Enum.count(Enum.uniq(results))
+        results =
+          for task <- tasks do
+            Task.await(task)
+          end
 
-      results = List.delete(results, expected_request_error)
+        expected_request_error =
+          {:error,
+           %{
+             "minutes" => ["exceeds budget"]
+           }}
 
-      assert Enum.all?(results, fn result ->
-               match?(
-                 {:ok, _},
-                 result
-               )
-             end)
+        assert expected_request_error in results
+        assert Enum.count(tasks) == Enum.count(Enum.uniq(results))
 
-      assert {:ok, %{"minutes" => 0}} = Primary.get_user(papa_token)
+        results = List.delete(results, expected_request_error)
+
+        assert Enum.all?(results, fn result ->
+                 match?(
+                   {:ok, _},
+                   result
+                 )
+               end)
+
+        assert {:ok, %{"minutes" => 0}} = Primary.get_user(papa_token)
+      end
     end
   end
 
