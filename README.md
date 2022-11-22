@@ -6,7 +6,7 @@ This is an implementation of the core "Home Visit Service" functionality using E
     + [Interface](#interface)
     + [Database](#database)
     + [Authentication](#authentication)
-  * [Design choices](#design-choices)
+  * [Design Choices](#design-choices)
     + [Authentication](#authentication-1)
       - [Endpoints](#endpoints)
       - [Context and Database](#context-and-database)
@@ -59,7 +59,7 @@ I decided to try out adding a password based authentication system (`Pow`) with 
 - As for authorization, though there is some that could be implemented, it wasn't on the top of my list for interesting things to learn and try with this service.
 - As an aside, `Pow` ended up being a bit of a bad choice, as a lot of its core functionality is very tightly coupled with `Plug`, meaning I couldn't refactor some core logic to the main `PapaVisits` module easily.
 
-## Design choices
+## Design Choices
 Here is a break down of some design decisions for various parts of the system:
 
 ### Authentication
@@ -85,7 +85,7 @@ Here is how I chose to lay out the authentication pattern.
     - Clearly this would just archive a user if it were a real thing.
 
 #### Context and Database
-- `Pow` covers these parts of the actual design, as it provides all of the functions and migrations for building the `users` table.
+`Pow` covers these parts of the actual design, as it provides all of the functions and migrations for building the `users` table.
 
 #### Notes
 - The aim here was to try out a different auth system than I've typically used in the past. This service demo probably didn't need one, but I was curious to try it out.
@@ -143,7 +143,7 @@ Here is how I chose to lay out the rest of the functionality related to requesti
 
 ### Testing
 - I mainly focused on unit testing and test driving in most functionality.
-- I didn't do any mocking, so there are not really any good database failure scenario tests.
+- I didn't do any mocking, so there are not really any good database failure scenario tests (lock timeouts, for example).
   - I really wanted to try a `Mox` based approach to the injecting errors via the `Ecto.Adapter` behaviour(s), but ran into some errors, and decided for the sake of time to just note that low-level database errors were not tested.
   - Another option would be the excellent library called `Mimic`, but I figued it was best not to showcase mocking since it's generally frowned-upon.
 - Otherwise, I was curious about why a transaction was good enough to pass some concurrency cases in the unit tests so I built some integration tests to confirm that `FOR UPDATE` was necessary for the transactions (as built, at least).
