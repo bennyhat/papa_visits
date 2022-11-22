@@ -18,8 +18,8 @@ This is an implementation of the core "Home Visit Service" functionality using E
     + [Testing](#testing)
     + [Dev Environment](#dev-environment)
   * [Assumptions](#assumptions)
-    + [It's a demo service](#it-s-a-demo-service)
-    + [Concurrency is interesting, so I focused on it](#concurrency-is-interesting--so-i-focused-on-it)
+    + [It is a demo service](#it-is-a-demo-service)
+    + [Concurrency is interesting so I focused on it](#concurrency-is-interesting-so-i-focused-on-it)
 - [Running the service](#running-the-service)
   * [Getting the most basic tools installed](#getting-the-most-basic-tools-installed)
   * [Getting the next level of tools installed](#getting-the-next-level-of-tools-installed)
@@ -157,12 +157,12 @@ Here is how I chose to lay out the rest of the functionality related to requesti
 ## Assumptions
 A lot of the assumptions I had were covered in the [Design](#design) section, but here are some as they pertain to how someone would actually use the service.
 
-### It's a demo service
+### It is a demo service
 - It's okay if a user creates as many accounts as they want.
 - It's okay if a user can see everyone else's visit requests.
 - It's okay if a user can just complete a visit without being assigned to it or otherwise validating that they even did it.
 
-### Concurrency is interesting, so I focused on it
+### Concurrency is interesting so I focused on it
 - In my current professional position, most concurrency issues I deal with are of the `get` and `update` race condition variety, and restricted to the same operation on the same model.
 - This service has some interesting scenarios that span different endpoints, which is a fun exercise:
   - Repeated visit requests -
