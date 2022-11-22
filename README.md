@@ -28,11 +28,11 @@ This is an implementation of the core "Home Visit Service" functionality using E
   * [Running the application release](#running-the-application-release)
   * [Running the dev version of the application](#running-the-dev-version-of-the-application)
   * [Other tooling in the Makefile](#other-tooling-in-the-makefile)
-  * [Using the Application](#using-the-application)
-    + [Create a user](#create-a-user)
-    + [Request a visit](#request-a-visit)
-    + [Find and complete a visit](#find-and-complete-a-visit)
-  * [Cleanup of environment](#cleanup-of-environment)
+- [Using the Application](#using-the-application)
+  * [Create a user](#create-a-user)
+  * [Request a visit](#request-a-visit)
+  * [Find and complete a visit](#find-and-complete-a-visit)
+- [Cleanup of environment](#cleanup-of-environment)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -307,14 +307,14 @@ There are some nice to haves in the Makefile for things like
 - stop just the database - `make stop.db`
 - stop just either app- `make stop.app.a`, etc.
 
-## Using the Application
-Since this is simple API, with no GUI, you'll either need Postman, or a few command line tools to use it.
+# Using the Application
+Since this is simple API, with no GUI, you'll either need Postman, or a few command line tools to use it. This also assumes you've started the application in the background using steps in the [Running the application release](#running-the-application-release) section.
 
 This section will use the following tools to demonstrate use:
 - `jq` - installed as a tool already via `asdf`
 - `curl` - installed on Mac by default
 
-### Create a user
+## Create a user
 This will create a user and get back a token, which we'll use in subsequent requests
 ``` shell
 token=$(
@@ -327,7 +327,7 @@ curl \
 )
 ```
 
-### Request a visit
+## Request a visit
 The created user will only have 120 minutes to spend, so keep that in mind. Using the `token` variable from the last step, I can now request a visit with the following. Note that the `Bearer` specification is no used on the header, which I noticed long after adding `Pow` token support.
 
 ``` shell
@@ -342,7 +342,7 @@ curl \
 )
 ```
 
-### Find and complete a visit
+## Find and complete a visit
 Now to act as a pal, we'll need to be a different user, find the visit and complete it. The final command will print the json response showing the resulting minutes for the papa and pal.
 
 ``` shell
@@ -375,7 +375,7 @@ curl \
   | jq -r '.'
 ```
 
-## Cleanup of environment
+# Cleanup of environment
 Once you've ran the tests and used the service to your liking, you can have it remove its running daemons and data from the system.
 
 ``` shell
