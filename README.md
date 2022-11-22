@@ -95,12 +95,12 @@ Here is a break down of some design decisions for various parts of the system:
         - A user can't complete their own visits, mostly b/c it's a terrible deal for them.
         - The path and method for this was not a great choice, but I'm keeping it. It likely should have been `POST /api/visit/:id/transaction`, as it technically creates a new transaction for that visit (and it's not idempotent like a `PUT` should be).
     - Notes
-      - All error responses are in the form `{"error": {"status": 422|401|500, "message": "error details", "errors": {"field": ["error one", "error two"]}}}`. This is largely how `CozyParams` likes to present changeset errors and how `Pow` likes to envelope responses, so I went with hit.
+      - All error responses are in the form `{"error": {"status": 422|401|500, "message": "error details", "errors": {"field": ["error one", "error two"]}}}`. This is largely how `CozyParams` likes to present changeset errors and how `Pow` likes to envelope responses, so I went with it.
   - Context
     - The main functionality (except user creation, b/c `Pow` is coupled with `Plug`) is grouped under the `PapaVisits` context module.
     - This context then delegates to repo pattern modules that control creation, deletion and updating of database models.
     - I tried hard to separate the input models from the database models through the use of a library called `CozyParams`. This is a pitfall made by previous maintainers of my current employer's codebase and it has locked us into some nastiness like working with unvalidated, string-keyed maps deep inside business logic.
-    - Even so, the actual API is fairly tightly coupled with the database models (such that I didn't even need to translate DB changesets to parameter changesets in the responses to have them be meaninful).
+    - Even so, the actual API is fairly tightly coupled with the database models (such that I didn't even need to translate DB changesets to parameter changesets in the responses to have them be meaningful).
     - I also made an effort to consider (and integration test) concurrency problems. The scenarios for this are detailed later in this README, but ultimately, I settled on `SELECT FOR UPDATE` as a pessimistic locking mechanism. Other options would have been:
       - Using postgres advisory locks as those allow the lock to be a bit more semantic. Locking while checking the total minutes used by a user doesn't make a whole lot of sense if you phrase the check as `FOR UPDATE`, so an advisory lock would allow the intention to be more clear.
       - Using "Repeatable Read" or "Serializeable" transaction isolation would likely work too, though I didn't try it. Retries of the failed transactions would be necessary in this case.
@@ -195,6 +195,7 @@ If `make` isn't working for you, you can instead do the following, answering yes
 ``` shell
 direnv allow
 mix deps.get
+initdb --username="${PGUSER}" --pwfile=<(echo "${PGPASSWORD}")
 pg_ctl start
 mix test
 ```
@@ -211,12 +212,11 @@ make test.integration
 If `make` isn't working for you, you can instead do the following to start up the app and its secondary (assuming you've run the unit tests and its required DB and `deps.get`).
 
 ``` shell
-direnv allow
 MIX_ENV=prod mix do ecto.create + ecto.migrate
 MIX_ENV=prod mix release --overwrite papa_visits_a
 MIX_ENV=prod mix release --overwrite papa_visits_b
-_build/prod/rel/papa_visits_a/bin/papa_visits_a start
-PORT=${PORT_SECONDARY} _build/prod/rel/papa_visits_b/bin/papa_visits_b start
+_build/prod/rel/papa_visits_a/bin/papa_visits_a daemon
+PORT=${PORT_SECONDARY} _build/prod/rel/papa_visits_b/bin/papa_visits_b daemon
 
 mix test.integration
 ```
@@ -228,24 +228,36 @@ This can be done via the following command, which will start the primary and sec
 make start start.secondary
 ```
 
-If you're having trouble with `make`, you can do this instead and just run the primary app.
+If you're having trouble with `make`, you can do this instead and just run the primary app. If you did run the integration tests, you'll want to stop the primary and secondary first too.
 
 ``` shell
+# stop the running releases, for example
+pkill -afl beam.\*papa_visits
+
+# run just the primary
 MIX_ENV=prod mix do ecto.create + ecto.migrate
 MIX_ENV=prod mix release --overwrite papa_visits_a
-_build/prod/rel/papa_visits_a/bin/papa_visits_a start
+_build/prod/rel/papa_visits_a/bin/papa_visits_a daemon
 ```
 
 ### Running the dev version of the application
 This can be done via the following command to run the dev copy of the app and attach to it with iex. This will run the application on port `14001`, so make sure you've stopped any other copies of the app you may have started in the background, first.
 
 ``` shell
+# stop backgrounded releases
+make stop.app.a stop.app.b
+
+# run interactive dev version
 make run.interactive
 ```
 
 If you're having trouble with `make`, you can do this instead
 
 ``` shell
+# stop backgrounded releases
+pkill -afl beam.\*papa_visits
+
+# run interactive dev version
 mix do ecto.create + ecto.migrate
 iex -S mix phx.server
 ```
@@ -329,4 +341,29 @@ curl \
   --request PUT \
   "http://localhost:14001/api/visit/${pal_visit_id}/complete" \
   | jq -r '.'
+```
+
+### Cleanup of environment
+Once you've ran the tests and used the service to your liking, you can have it remove its running daemons and data from the system.
+
+``` shell
+make clean
+```
+
+If you're having trouble with `make` you can do this instead.
+
+``` shell
+pkill -afl beam.\*papa_visits
+pg_ctl stop
+rm -rf _build deps ${PGDATA}
+```
+
+Note that the `clean` will NOT remove any tools installed by `asdf` on the off chance that the versions would match something already installed on your machine.
+
+However, if you feel very confident that none of the versions in the `.tool-versions` file match, you can run the following to get rid of the tooling too. Once again, if you have tools that you use globally or locally in any other repos with the same version this will remove them too, so be warned!
+
+``` shell
+while read tool version; do
+  asdf uninstall ${tool} ${version}
+done < .tool-versions
 ```
